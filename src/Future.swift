@@ -13,18 +13,16 @@ public enum Result<Value> {
     case failure(Error)
 }
 
-protocol FutureResolver {
-    
-}
-
 public final class Future<Value> {
     private typealias SuccessHandler = (Value) -> Void
     private typealias FailureHandler = (Error) -> Void
+    public typealias Worker = (@escaping (Result<Value>) -> Void) -> Void
     private enum State { case pending, success(Value), failure(Error) }
     
     private var successHandlers = [SuccessHandler]()
     private var failureHandlers = [FailureHandler]()
     private var state = State.pending
+    private let worker: Worker
     
     private func register(success: SuccessHandler? = nil, failure: FailureHandler? = nil) {
         synchronized(self) {
@@ -55,34 +53,35 @@ public final class Future<Value> {
         }
     }
     
-    public init(_ worker: (@escaping (Result<Value>) -> Void) -> Void) {
+    public init(_ worker: @escaping Worker) {
+        self.worker = worker
         worker(resolve(with:))
     }
     
     @discardableResult
-    public func `try`(_ handler: @escaping (Value) -> Void) -> FutureCatch {
+    public func `try`(_ handler: @escaping (Value) -> Void) -> FutureTry<Value> {
+        let futureTry = FutureTry(self)
         register(success: handler)
-        return self
+        return futureTry
     }
     
     @discardableResult
-    public func `catch`<E: Error>(_ handler: @escaping (E) -> Void) -> FutureFinal {
+    public func `catch`<E: Error>(_ handler: @escaping (E) -> Void) -> FutureCatch<Value> {
         register(failure: { ($0 as? E).map(handler) })
-        return self
+        return FutureCatch(self)
     }
     
     @discardableResult
-    public func `catch`(_ handler: @escaping (Error) -> Void) -> FutureFinal {
+    public func `catch`(_ handler: @escaping (Error) -> Void) -> FutureCatch<Value> {
         register(failure: handler)
-        return self
+        return FutureCatch(self)
     }
     
-    public func `finally`(_ handler: @escaping () -> Void) {
+    public func `finally`(_ handler: @escaping () -> Void) -> FutureFinal<Value> {
         register(success: { _ in handler() }, failure: { _ in handler() })
+        return FutureFinal(self)
     }
 }
-
-extension Future: FutureCatch, FutureFinal { }
 
 extension Future {
     func map<T>(_ transform: @escaping (Value) throws -> T) -> Future<T> {
@@ -100,18 +99,71 @@ extension Future {
     }
 }
 
-public protocol FutureCatch {
-    @discardableResult
-    func `catch`<E: Error>(_ handler: @escaping (E) -> Void) -> FutureFinal
-    
-    @discardableResult
-    func `catch`(_ handler: @escaping (Error) -> Void) -> FutureFinal
-    
-    func `finally`(_ handler: @escaping () -> Void)
+public protocol Cancelable {
+    func cancel()
 }
 
-public protocol FutureFinal {
-    func `finally`(_ handler: @escaping () -> Void)
+public class FutureTry<Value>: Cancelable {
+    private var future: Future<Value>
+    private var isCancelled = false
+    
+    fileprivate init(_ future: Future<Value>) {
+        self.future = future
+    }
+    
+    deinit { cancel() }
+    
+    public func cancel() {
+        synchronized(self) { isCancelled = true }
+    }
+    
+    @discardableResult
+    public func `catch`<E: Error>(_ handler: @escaping (E) -> Void) -> FutureCatch<Value> {
+        
+    }
+    
+    @discardableResult
+    public func `catch`(_ handler: @escaping (Error) -> Void) -> FutureCatch<Value> {
+        
+    }
+    
+    public func `finally`(_ handler: @escaping () -> Void) -> FutureFinal<Value> {
+        
+    }
+}
+
+public class FutureCatch<Value>: Cancelable {
+    private var future: Future<Value>
+    private var isCancelled = false
+    
+    fileprivate init(_ future: Future<Value>) {
+        self.future = future
+    }
+    
+    deinit { cancel() }
+    
+    public func cancel() {
+        synchronized(self) { isCancelled = true }
+    }
+    
+    public func `finally`(_ handler: @escaping () -> Void) {
+        
+    }
+}
+
+public class FutureFinal<Value>: Cancelable {
+    private var future: Future<Value>
+    private var isCancelled = false
+    
+    fileprivate init(_ future: Future<Value>) {
+        self.future = future
+    }
+    
+    deinit { cancel() }
+    
+    public func cancel() {
+        synchronized(self) { isCancelled = true }
+    }
 }
 
 fileprivate func synchronized<T>(_ obj: AnyObject, _ body: () throws -> T) rethrows -> T {
