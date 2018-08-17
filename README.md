@@ -1,9 +1,9 @@
 # Suture
 
-[![CI Status](https://img.shields.io/travis/cristiankocza/SwiftFuture.svg?style=flat)](https://travis-ci.org/cristiankocza/SwiftFuture)
-[![Version](https://img.shields.io/cocoapods/v/SwiftFuture.svg?style=flat)](https://cocoapods.org/pods/SwiftFuture)
-[![License](https://img.shields.io/cocoapods/l/SwiftFuture.svg?style=flat)](https://cocoapods.org/pods/SwiftFuture)
-[![Platform](https://img.shields.io/cocoapods/p/SwiftFuture.svg?style=flat)](https://cocoapods.org/pods/SwiftFuture)
+[![CI Status](https://img.shields.io/travis/cristik/Suture.svg?style=flat)](https://travis-ci.org/cristik/Suture)
+[![Version](https://img.shields.io/cocoapods/v/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
+[![License](https://img.shields.io/cocoapods/l/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
+[![Platform](https://img.shields.io/cocoapods/p/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
 
 ## Example
 
