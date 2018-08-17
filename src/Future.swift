@@ -8,12 +8,11 @@
 
 import Foundation
 
-public enum Result<Value> {
-    case value(Value)
-    case error(Error)
+public protocol Cancelable {
+    func cancel()
 }
 
-public class Subscription {
+public class Subscription: Cancelable {
     public private(set) var isCancelled = false
     
     public func cancel() {
@@ -33,35 +32,24 @@ public final class Future<Value> {
     private var result = Result<Value>?.none
     private var worker: Worker?
     private var dispatcher: Dispatcher?
+    private var isCanceled = false
     
     private func resolve(with result: Result<Value>) {
         synchronized(self) {
+            self.result = result
             registrations.forEach { $0(result) }
             registrations = []
         }
     }
     
-    private func register(on dispatcher: Dispatcher? = nil, handler: @escaping ResultHandler) {
-        synchronized(self) {
-            // intended retaing cycle, will be broken when the future receives a result
-            let wrapped = { result in (dispatcher ?? self.dispatcher).map { $0.dispatch { handler(result) } } ?? handler(result) }
-            switch result {
-            case .none:
-                registrations.append(wrapped)
-            case let .some(result):
-                wrapped(result)
-            }
-        }
-    }
-    
-    public init(_ worker: @escaping Worker) {
+    public init(dispatcher: Dispatcher? = nil, worker: @escaping Worker) {
+        self.dispatcher = dispatcher
         self.worker = worker
-        dispatcher = nil
     }
     
-    public func dispatch(on dispatcher: Dispatcher) -> Future<Value> {
-        return Future { resolver in
-            self.register(on:dispatcher, handler: resolver)
+    public func notifying(on dispatcher: Dispatcher) -> Future<Value> {
+        return Future(dispatcher: dispatcher) { resolver in
+            self.subscribe(resolver)
         }
     }
     
@@ -73,14 +61,31 @@ public final class Future<Value> {
             worker = nil
             
             let subscription = Subscription()
-            register { result in if !subscription.isCancelled { handler(result) } }
+            
+            // intended retaing cycle, will be broken when the future receives a result
+            let wrapped: (Result<Value>) -> Void = { result in
+                guard !subscription.isCancelled else { return }
+                self.dispatcher.map { $0.dispatch { handler(result) } } ?? handler(result)
+            }
+            
+            switch result {
+            case .none:
+                registrations.append(wrapped)
+            case let .some(result):
+                wrapped(result)
+            }
+            
             return subscription
         }
     }
     
+    public func cancel() {
+        synchronized(self) { isCanceled = true }
+    }
+    
     public func map<T>(_ transform: @escaping (Result<Value>) throws -> Result<T>) -> Future<T> {
         return .init { resolver in
-            self.register { result in
+            self.subscribe { result in
                 do { try resolver(transform(result)) } catch { resolver(.error(error)) }
             }
         }
@@ -88,10 +93,16 @@ public final class Future<Value> {
     
     public func flatMap<T>(_ transform: @escaping (Result<Value>) throws -> Future<T>) -> Future<T> {
         return .init { resolver in
-            self.register { result in
-                do { try transform(result).register(handler: resolver) } catch { resolver(.error(error)) }
+            self.subscribe { result in
+                do { try transform(result).subscribe(resolver) } catch { resolver(.error(error)) }
             }
         }
+    }
+}
+
+extension DispatchQueue: Dispatcher {
+    public func dispatch(_ block: @escaping () -> Void) {
+        async(execute: block)
     }
 }
 
@@ -103,6 +114,11 @@ extension Future {
     
     public static func error(_ error: Error) -> Future<Value> {
         return .init { $0(.error(error)) }
+    }
+    
+    public static func placeholder() -> Future<Value> {
+        assertionFailure("Not yet implemented")
+        return .init { _ in }
     }
     
     public static func retrying(_ times: Int, _ worker: @escaping Worker) -> Future<Value> {
@@ -128,7 +144,8 @@ extension Future {
         }
     }
     
-    public func subscribe(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)?) -> Subscription {
+    @discardableResult
+    public func subscribe(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)? = nil) -> Subscription {
         return subscribe { result in
             switch result {
             case let .value(value): onValue?(value)
