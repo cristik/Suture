@@ -12,90 +12,60 @@ public protocol Cancelable {
     func cancel()
 }
 
-public class Subscription: Cancelable {
-    public private(set) var isCancelled = false
-    
-    public func cancel() {
-        synchronized(self) { isCancelled = true }
-    }
-}
-
 public protocol Dispatcher {
     func dispatch(_ block: @escaping () -> Void)
 }
 
-public final class Future<Value> {
-    public typealias ResultHandler = (Result<Value>) -> Void
-    public typealias Worker = (@escaping (Result<Value>) -> Void) -> Void
+public class Subscription: Cancelable {
+    public private(set) var isCancelled = false
+    private var cancelAction: (() -> Void)?
     
-    fileprivate var registrations = [ResultHandler]()
-    private var result = Result<Value>?.none
-    private var worker: Worker?
-    private var dispatcher: Dispatcher?
-    private var isCanceled = false
-    
-    private func resolve(with result: Result<Value>) {
-        synchronized(self) {
-            self.result = result
-            registrations.forEach { $0(result) }
-            registrations = []
-        }
-    }
-    
-    public init(dispatcher: Dispatcher? = nil, worker: @escaping Worker) {
-        self.dispatcher = dispatcher
-        self.worker = worker
-    }
-    
-    public func notifying(on dispatcher: Dispatcher) -> Future<Value> {
-        return Future(dispatcher: dispatcher) { resolver in
-            self.subscribe(resolver)
-        }
-    }
-    
-    @discardableResult
-    public func subscribe(_ handler: @escaping (Result<Value>) -> Void) -> Subscription {
-        return synchronized(self) {
-            // this is one lazy future :)
-            worker?(resolve(with:))
-            worker = nil
-            
-            let subscription = Subscription()
-            
-            // intended retaing cycle, will be broken when the future receives a result
-            let wrapped: (Result<Value>) -> Void = { result in
-                guard !subscription.isCancelled else { return }
-                self.dispatcher.map { $0.dispatch { handler(result) } } ?? handler(result)
-            }
-            
-            switch result {
-            case .none:
-                registrations.append(wrapped)
-            case let .some(result):
-                wrapped(result)
-            }
-            
-            return subscription
-        }
+    public init(_ cancelAction:  (() -> Void)? = nil) {
+        self.cancelAction = cancelAction
     }
     
     public func cancel() {
-        synchronized(self) { isCanceled = true }
+        synchronized(self) { cancelAction?(); cancelAction = nil; isCancelled = true }
+    }
+}
+
+public final class Future<Value> {
+    public typealias ResultHandler = (Result<Value>) -> Void
+    public typealias Worker = (@escaping ResultHandler) -> Subscription
+    
+    private let worker: Worker
+    
+    public init(worker: @escaping Worker) {
+        self.worker = worker
+    }
+    
+    @discardableResult
+    public func subscribe(_ handler: @escaping ResultHandler) -> Subscription {
+        return worker(handler)
+    }
+    
+    public func subscribing(on dispatcher: Dispatcher) -> Future<Value> {
+        return .init { resolver in
+            let subscription = self.subscribe(resolver)
+            return Subscription { subscription.cancel() }
+        }
     }
     
     public func map<T>(_ transform: @escaping (Result<Value>) throws -> Result<T>) -> Future<T> {
         return .init { resolver in
-            self.subscribe { result in
+            let subscription = self.subscribe { result in
                 do { try resolver(transform(result)) } catch { resolver(.error(error)) }
             }
+            return Subscription { subscription.cancel() }
         }
     }
     
     public func flatMap<T>(_ transform: @escaping (Result<Value>) throws -> Future<T>) -> Future<T> {
         return .init { resolver in
-            self.subscribe { result in
+            let subscription = self.subscribe { result in
                 do { try transform(result).subscribe(resolver) } catch { resolver(.error(error)) }
             }
+            return Subscription { subscription.cancel() }
         }
     }
 }
@@ -109,38 +79,42 @@ extension DispatchQueue: Dispatcher {
 extension Future {
     
     public static func value(_ value: Value) -> Future<Value> {
-        return .init { $0(.value(value)) }
+        return .init { $0(.value(value)); return Subscription() }
     }
     
     public static func error(_ error: Error) -> Future<Value> {
-        return .init { $0(.error(error)) }
+        return .init { $0(.error(error)); return Subscription() }
     }
     
     public static func placeholder() -> Future<Value> {
         assertionFailure("Not yet implemented")
-        return .init { _ in }
+        return .init { _ in return Subscription() }
     }
     
-    public static func retrying(_ times: Int, _ worker: @escaping Worker) -> Future<Value> {
-        let times = max(times, 0)
-        var attempts = 1
-        var originalResolver: ((Result<Value>) -> Void)!
-        var modifiedResolver: ((Result<Value>) -> Void)!
-        modifiedResolver = { result in
-            switch result {
-            case .value: originalResolver(result)
-            case .error:
-                if attempts < times {
-                    attempts += 1
-                    worker(modifiedResolver)
-                } else {
-                    originalResolver(result)
+    public func retrying(_ times: Int) -> Future<Value> {
+        return .init { resolver in
+            var remaining = times - 1
+            var handler: ResultHandler!
+            var subscription: Subscription!
+            handler = { result in
+                print(remaining)
+                switch result {
+                case .value,
+                     .error where remaining <= 0: resolver(result)
+                case .error:
+                    remaining -= 1
+                    subscription = self.subscribe(handler)
                 }
             }
+            subscription = self.subscribe(handler)
+            return Subscription { subscription.cancel() }
         }
-        return Future { resolver in
-            originalResolver = resolver
-            worker(modifiedResolver)
+    }
+    
+    public func hold() -> Future<Value> {
+        return .init { resolver in
+            _ = self.subscribe(resolver)
+            return Subscription()
         }
     }
     
@@ -207,7 +181,6 @@ extension Future {
     }
 }
 
-fileprivate func synchronized<T>(_ obj: AnyObject, _ body: () throws -> T) rethrows -> T {
-    objc_sync_enter(obj); defer { objc_sync_exit(obj) }
-    return try body()
+fileprivate func synchronized<T>(_ lock: AnyObject, _ body: () throws -> T) rethrows -> T {
+    objc_sync_enter(lock); defer { objc_sync_exit(lock) }; return try body()
 }

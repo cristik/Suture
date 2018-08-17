@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import SwiftFuture
+@testable import Suture
 
 enum FutureTestsError: Error {
     case one
@@ -18,7 +18,7 @@ class FutureTests: XCTestCase {
     func test_init_doesntStartWorkRightAway() {
         var executed = false
         _ = Future<Void> { _ in
-            executed = true            
+            executed = true; return Subscription()
         }
         XCTAssertFalse(executed)
     }
@@ -26,25 +26,29 @@ class FutureTests: XCTestCase {
     func test_subscribe_startsWorkingOnFirstSubscribe() {
         var executed = false
         let future = Future<Void> { _ in
-            executed = true
+            executed = true; return Subscription()
         }
         _ = future.subscribe { _ in }
         XCTAssertTrue(executed)
     }
     
-    func test_subscribe_executesWorkerOnlyOnce() {
+    func test_subscribe_executesWorkerEachSubscription() {
         var executeCount = 0
         let future = Future<Void> { _ in
-            executeCount += 1
+            executeCount += 1; return Subscription()
         }
         _ = future.subscribe { _ in }
         _ = future.subscribe { _ in }
-        XCTAssertEqual(executeCount, 1)
+        XCTAssertEqual(executeCount, 2)
     }
     
     func test_retrying_executesWorkerTheSpecifiedAmountOfTimes() {
         var executionCount = 0
-        Future<Int>.retrying(3) { executionCount += 1; $0(.error(FutureTestsError.one)) }.subscribe { _ in }
+        Future<Int> { resolver in
+            executionCount += 1
+            resolver(.error(FutureTestsError.one))
+            return Subscription()
+            }.retrying(3).subscribe()
         XCTAssertEqual(executionCount, 3)
     }
     
@@ -54,5 +58,15 @@ class FutureTests: XCTestCase {
             result = $0.value
         }
         XCTAssertEqual(result, "2")
+    }
+    
+    func test_cancel_cancelsChain() {
+        var canceled = false
+        let subscription = Future<Int> { _ in
+            return Subscription { canceled = true }
+            }.mapValue { $0 * 2 }.mapError { _ in return 2 }.subscribe()
+        XCTAssertFalse(canceled)
+        subscription.cancel()
+        XCTAssertTrue(canceled)
     }
 }
