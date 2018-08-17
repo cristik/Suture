@@ -97,7 +97,6 @@ extension Future {
             var handler: ResultHandler!
             var subscription: Subscription!
             handler = { result in
-                print(remaining)
                 switch result {
                 case .value,
                      .error where remaining <= 0: resolver(result)
