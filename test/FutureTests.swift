@@ -69,4 +69,23 @@ class FutureTests: XCTestCase {
         subscription.cancel()
         XCTAssertTrue(canceled)
     }
+    
+    func test_reuse_doesntExecuteTheWorkerMultipleTimes() {
+        var count = 0
+        let future = Future<Int> { count += 1; $0(.value(count)); return .init() }.reuse()
+        future.subscribe()
+        future.map { $0.map { $0 * 2} }.subscribe()
+        future.subscribe()
+        XCTAssertEqual(count, 1)
+    }
+    
+    func test_reuse_returnsTheValueOfTheFirstComputation() {
+        var count = 0
+        var results = [Int?]()
+        let future = Future<Int> { count += 1; $0(.value(count)); return .init() }.reuse()
+        future.subscribe { results.append($0.value) }
+        future.map { $0.map { $0 * 2} }.subscribe { results.append($0.value) }
+        future.subscribe { results.append($0.value) }
+        XCTAssertEqual(results, [.some(1), .some(2), .some(1)])
+    }
 }

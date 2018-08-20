@@ -8,15 +8,11 @@
 
 import Foundation
 
-public protocol Cancelable {
-    func cancel()
-}
-
 public protocol Dispatcher {
     func dispatch(_ block: @escaping () -> Void)
 }
 
-public class Subscription: Cancelable {
+public class Subscription {
     public private(set) var isCancelled = false
     private var cancelAction: (() -> Void)?
     
@@ -30,49 +26,18 @@ public class Subscription: Cancelable {
 }
 
 public final class Future<Value> {
-    public typealias ResultHandler = (Result<Value>) -> Void
-    public typealias Worker = (@escaping ResultHandler) -> Subscription
+    public typealias Subscriber = (Result<Value>) -> Void
+    public typealias Worker = (@escaping Subscriber) -> Subscription
     
-    private let worker: Worker
+    fileprivate let worker: Worker
     
     public init(worker: @escaping Worker) {
         self.worker = worker
     }
     
     @discardableResult
-    public func subscribe(_ handler: @escaping ResultHandler) -> Subscription {
+    public func subscribe(_ handler: @escaping Subscriber) -> Subscription {
         return worker(handler)
-    }
-    
-    public func subscribing(on dispatcher: Dispatcher) -> Future<Value> {
-        return .init { resolver in
-            let subscription = self.subscribe(resolver)
-            return Subscription { subscription.cancel() }
-        }
-    }
-    
-    public func map<T>(_ transform: @escaping (Result<Value>) throws -> Result<T>) -> Future<T> {
-        return .init { resolver in
-            let subscription = self.subscribe { result in
-                do { try resolver(transform(result)) } catch { resolver(.error(error)) }
-            }
-            return Subscription { subscription.cancel() }
-        }
-    }
-    
-    public func flatMap<T>(_ transform: @escaping (Result<Value>) throws -> Future<T>) -> Future<T> {
-        return .init { resolver in
-            let subscription = self.subscribe { result in
-                do { try transform(result).subscribe(resolver) } catch { resolver(.error(error)) }
-            }
-            return Subscription { subscription.cancel() }
-        }
-    }
-}
-
-extension DispatchQueue: Dispatcher {
-    public func dispatch(_ block: @escaping () -> Void) {
-        async(execute: block)
     }
 }
 
@@ -91,10 +56,46 @@ extension Future {
         return .init { _ in return Subscription() }
     }
     
+    public func working(on dispatcher: Dispatcher) -> Future<Value> {
+        return .init { resolver in
+            var subscription: Subscription?
+            var canceled = false
+            dispatcher.dispatch {
+                // TODO: can there occur race condition on the assign?
+                if !canceled { subscription = self.worker(resolver)  }
+            }
+            return Subscription { canceled = true; subscription?.cancel() }
+        }
+    }
+    
+    public func subscribing(on dispatcher: Dispatcher) -> Future<Value> {
+        return .init { resolver in
+            let subscription = self.subscribe(resolver)
+            return Subscription { subscription.cancel() }
+        }
+    }
+    
+    public func map<T>(_ transform: @escaping (Result<Value>) -> Result<T>) -> Future<T> {
+        return .init { resolver in
+            let subscription = self.subscribe { resolver(transform($0)) }
+            return Subscription { subscription.cancel() }
+        }
+    }
+    
+    public func flatMap<T>(_ transform: @escaping (Result<Value>) -> Future<T>) -> Future<T> {
+        return .init { resolver in
+            var innerSubscription = Subscription?.none
+            let subscription = self.subscribe { result in
+                innerSubscription = transform(result).subscribe(resolver)
+            }
+            return Subscription { subscription.cancel(); innerSubscription?.cancel() }
+        }
+    }
+    
     public func retrying(_ times: Int) -> Future<Value> {
         return .init { resolver in
             var remaining = times - 1
-            var handler: ResultHandler!
+            var handler: Subscriber!
             var subscription: Subscription!
             handler = { result in
                 switch result {
@@ -110,9 +111,28 @@ extension Future {
         }
     }
     
-    public func hold() -> Future<Value> {
+    // reused futures don't cancel the original worker
+    public func reuse() -> Future<Value> {
+        let lock = NSRecursiveLock()
+        var started = false
+        var result: Result<Value>?
+        var subscribers = [Subscriber]()
         return .init { resolver in
-            _ = self.subscribe(resolver)
+            lock.lock(); defer { lock.unlock() }
+            if let result = result {
+                resolver(result)
+            } else {
+                subscribers.append(resolver)
+                if !started {
+                    started = true
+                    self.subscribe { res in
+                        lock.lock(); defer { lock.unlock() }
+                        result = res
+                        subscribers.forEach { $0(res) }
+                        subscribers = []
+                    }
+                }
+            }
             return Subscription()
         }
     }
