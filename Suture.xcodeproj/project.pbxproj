@@ -32,7 +32,7 @@
 		0FF6F74A211CB7AC007C8697 /* SutureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SutureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FF6F74C211CB7AC007C8697 /* FutureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FutureTests.swift; sourceTree = "<group>"; };
 		0FF6F74E211CB7AC007C8697 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0FF6F755211CBC7B007C8697 /* Suture.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; path = Suture.podspec; sourceTree = "<group>"; };
+		0FF6F755211CBC7B007C8697 /* Suture.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; path = Suture.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

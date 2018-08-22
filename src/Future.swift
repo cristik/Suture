@@ -1,37 +1,46 @@
+// Copyright (c) 2018, Cristian Kocza
+// All rights reserved.
 //
-//  Future.swift
-//  Suture
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
 //
-//  Created by Cristian Kocza on 09/08/2018.
-//  Copyright © 2018 cristik. All rights reserved.
+// 1. Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
 //
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER
+// OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+// OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+// OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+// ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import Foundation
 
-public protocol Dispatcher {
-    func dispatch(_ block: @escaping () -> Void)
-}
-
-public class Subscription {
-    public private(set) var isCancelled = false
-    private var cancelAction: (() -> Void)?
-    
-    public init(_ cancelAction:  (() -> Void)? = nil) {
-        self.cancelAction = cancelAction
-    }
-    
-    public func cancel() {
-        synchronized(self) { cancelAction?(); cancelAction = nil; isCancelled = true }
-    }
-}
-
+/// A Future represents a computation whose result is not yet determined, and whose
+/// computation can fail. Thus, a Future's result is actually a Result instance
+/// Futures are created by providing them a worker closure, which receives as single argument
+/// another closure that is meant to report the error or the success.
+/// A couple of notes:
+/// - futures are lazy by default, the work will start only when `subscribe()` is called
+/// - calling `subscribe()` multiple times will result in the worked being executed multiple times,
+/// if that is not desired then the `reuse()` operator can be used, which will create a new Future
+/// that caches the result of the first computation
 public final class Future<Value> {
     public typealias Subscriber = (Result<Value>) -> Void
     public typealias Worker = (@escaping Subscriber) -> Subscription
     
     fileprivate let worker: Worker
     
-    public init(worker: @escaping Worker) {
+    public required init(worker: @escaping Worker) {
         self.worker = worker
     }
     
@@ -197,6 +206,23 @@ extension Future {
                 return .error(error)
             }
         }
+    }
+}
+
+public protocol Dispatcher {
+    func dispatch(_ block: @escaping () -> Void)
+}
+
+public class Subscription {
+    public private(set) var isCancelled = false
+    private var cancelAction: (() -> Void)?
+    
+    public init(_ cancelAction:  (() -> Void)? = nil) {
+        self.cancelAction = cancelAction
+    }
+    
+    public func cancel() {
+        synchronized(self) { cancelAction?(); cancelAction = nil; isCancelled = true }
     }
 }
 
