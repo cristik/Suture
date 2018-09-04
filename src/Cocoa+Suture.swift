@@ -26,16 +26,30 @@
 import Foundation
 
 extension DispatchQueue: Dispatcher {
+    /// A dispatch queue will conform to `Dispatcher` by asynchronously dispatching
+    /// the block
+    ///
+    /// - Parameter block: the block to execute async
     public func dispatch(_ block: @escaping () -> Void) {
         async(execute: block)
     }
 }
 
 extension URLSession {
-    public func httpData(for url: URL) -> Future<(HTTPURLResponse, Data)> {
+    /// Creates a Future whose worker sends an HTTP GET request to the given URL.
+    /// In case of success the Future reports a tuple containing the response and the data
+    ///
+    /// - Parameter url: the url to query
+    /// - Returns: a Future
+    public func httpData(from url: URL) -> Future<(HTTPURLResponse, Data)> {
         return httpData(for: URLRequest(url: url))
     }
     
+    /// Creates a Future whose worker sends an HTTP request to the given URLRequest.
+    /// In case of success the Future reports a tuple containing the response and the data
+    ///
+    /// - Parameter url: the url request to send
+    /// - Returns: a Future
     public func httpData(for request: URLRequest) -> Future<(HTTPURLResponse, Data)> {
         return .init { resolver in
             let task = self.dataTask(with: request) { data, response, error in
@@ -57,10 +71,28 @@ extension URLSession {
         }
     }
     
-    public func httpObject<T: Decodable>(for url: URL, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<(HTTPURLResponse, T)> {
+    /// Convenience method for sending a GET request and receive a decoded JSON
+    /// In case the request fails or a decoding error occurs, the Future is marked as failed
+    ///
+    /// - Parameters:
+    ///   - url: the URL to query
+    ///   - type: the type to decode
+    ///   - decoder: a JSONDecoder to use, by default a simple instance is created
+    /// - Returns: a Future that gets resolved with a tupe made of the http response,
+    /// and the decoded object
+    public func httpObject<T: Decodable>(from url: URL, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<(HTTPURLResponse, T)> {
         return httpObject(for: URLRequest(url: url), ofType: type, decoder: decoder)
     }
     
+    /// Convenience method for sending a HTTP request and receive a decoded JSON
+    /// In case the request fails or a decoding error occurs, the Future is marked as failed
+    ///
+    /// - Parameters:
+    ///   - url: the URLRequest to send
+    ///   - type: the type to decode
+    ///   - decoder: a JSONDecoder to use, by default a simple instance is created
+    /// - Returns: a Future that gets resolved with a tupe made of the http response,
+    /// and the decoded object
     public func httpObject<T: Decodable>(for request: URLRequest, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<(HTTPURLResponse, T)> {
         return httpData(for: request).mapValue { try ($0.0, decoder.decode(type, from: $0.1)) }
     }

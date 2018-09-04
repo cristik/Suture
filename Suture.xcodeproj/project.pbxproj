@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		0FC2962B212441300057B063 /* Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC2962A212441300057B063 /* Result.swift */; };
 		0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */; };
+		0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */; };
+		0FCAF7F6212D335E007DF047 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F5212D335E007DF047 /* Subscription.swift */; };
+		0FCAF7F8212D33B2007DF047 /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */; };
 		0FF6F745211CB78D007C8697 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF6F744211CB78D007C8697 /* Future.swift */; };
 		0FF6F74D211CB7AC007C8697 /* FutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF6F74C211CB7AC007C8697 /* FutureTests.swift */; };
 		0FF6F74F211CB7AC007C8697 /* libSuture.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FF6F738211CB6E5007C8697 /* libSuture.a */; };
@@ -27,6 +30,9 @@
 /* Begin PBXFileReference section */
 		0FC2962A212441300057B063 /* Result.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Result.swift; sourceTree = "<group>"; };
 		0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cocoa+Suture.swift"; sourceTree = "<group>"; };
+		0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjcFuture.swift; sourceTree = "<group>"; };
+		0FCAF7F5212D335E007DF047 /* Subscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subscription.swift; sourceTree = "<group>"; };
+		0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dispatcher.swift; sourceTree = "<group>"; };
 		0FF6F738211CB6E5007C8697 /* libSuture.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSuture.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FF6F744211CB78D007C8697 /* Future.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
 		0FF6F74A211CB7AC007C8697 /* SutureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SutureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -77,8 +83,11 @@
 			isa = PBXGroup;
 			children = (
 				0FC2962A212441300057B063 /* Result.swift */,
+				0FCAF7F5212D335E007DF047 /* Subscription.swift */,
+				0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */,
 				0FF6F744211CB78D007C8697 /* Future.swift */,
 				0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */,
+				0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -192,9 +201,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */,
 				0FC2962B212441300057B063 /* Result.swift in Sources */,
+				0FCAF7F8212D33B2007DF047 /* Dispatcher.swift in Sources */,
 				0FF6F745211CB78D007C8697 /* Future.swift in Sources */,
 				0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */,
+				0FCAF7F6212D335E007DF047 /* Subscription.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
