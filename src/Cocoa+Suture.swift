@@ -52,12 +52,22 @@ extension DispatchQueue {
 }
 
 extension URLSession {
+    public struct SUHTTPGenericResponse {
+        let response: HTTPURLResponse
+        let data: Data
+    }
+    
+    public struct SUHTTPResponse<T: Decodable> {
+        let response: HTTPURLResponse
+        let data: T
+    }
+    
     /// Creates a Future whose worker sends an HTTP GET request to the given URL.
     /// In case of success the Future reports a tuple containing the response and the data
     ///
     /// - Parameter url: the url to query
     /// - Returns: a Future
-    public func httpData(from url: URL) -> Future<(HTTPURLResponse, Data)> {
+    public func httpData(from url: URL) -> Future<SUHTTPGenericResponse> {
         return httpData(for: URLRequest(url: url))
     }
     
@@ -66,7 +76,7 @@ extension URLSession {
     ///
     /// - Parameter url: the url request to send
     /// - Returns: a Future
-    public func httpData(for request: URLRequest) -> Future<(HTTPURLResponse, Data)> {
+    public func httpData(for request: URLRequest) -> Future<SUHTTPGenericResponse> {
         return .init { resolver in
             let task = self.dataTask(with: request) { data, response, error in
                 if let error = error {
@@ -79,7 +89,7 @@ extension URLSession {
                                                                                    httpVersion: nil,
                                                                                    headerFields: nil)!
                     let data = data ?? Data()
-                    resolver(Result<(HTTPURLResponse, Data)>.value((response, data)))
+                    resolver(.value(.init(response: response, data: data)))
                 }
             }
             task.resume()
@@ -96,7 +106,7 @@ extension URLSession {
     ///   - decoder: a JSONDecoder to use, by default a simple instance is created
     /// - Returns: a Future that gets resolved with a tupe made of the http response,
     /// and the decoded object
-    public func httpObject<T: Decodable>(from url: URL, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<(HTTPURLResponse, T)> {
+    public func httpObject<T: Decodable>(from url: URL, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<SUHTTPResponse<T>> {
         return httpObject(for: URLRequest(url: url), ofType: type, decoder: decoder)
     }
     
@@ -109,7 +119,7 @@ extension URLSession {
     ///   - decoder: a JSONDecoder to use, by default a simple instance is created
     /// - Returns: a Future that gets resolved with a tupe made of the http response,
     /// and the decoded object
-    public func httpObject<T: Decodable>(for request: URLRequest, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<(HTTPURLResponse, T)> {
-        return httpData(for: request).mapValue { try ($0.0, decoder.decode(type, from: $0.1)) }
+    public func httpObject<T: Decodable>(for request: URLRequest, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<SUHTTPResponse<T>> {
+        return httpData(for: request).mapValue { try .init(response: $0.response, data: decoder.decode(type, from: $0.data)) }
     }
 }
