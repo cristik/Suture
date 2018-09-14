@@ -50,7 +50,6 @@ public final class Future<Value> {
         self.worker = worker
     }
     
-    
     /// Registers a callback to be executed when the Future gets a result
     ///
     /// - Parameter handler: the closure to execute on completion
@@ -99,9 +98,14 @@ extension Future {
             var canceled = false
             dispatcher.dispatch {
                 // TODO: can there occur race condition on the assign?
-                if !canceled { subscription = self.worker(resolver)  }
+                if !canceled {
+                    subscription = self.worker(resolver)
+                }
             }
-            return Subscription { canceled = true; subscription?.cancel() }
+            return Subscription {
+                canceled = true
+                subscription?.cancel()
+            }
         }
     }
     
@@ -147,7 +151,7 @@ extension Future {
     ///
     /// - Parameter times: the maximum number of times to retry before giving up and reporting the last error
     /// - Returns: a new Future, the callee remains unaffected
-    public func retrying(_ times: Int) -> Future<Value> {
+    public func retry(_ times: Int) -> Future<Value> {
         return .init { resolver in
             var remaining = times - 1
             var handler: Subscriber!
@@ -172,7 +176,7 @@ extension Future {
     /// Note that reused futures don't cancel the original worker
     ///
     /// - Returns: a new Future, the callee remains unaffected
-    public func reuse() -> Future<Value> {
+    public func keep() -> Future<Value> {
         let lock = NSRecursiveLock()
         var started = false
         var result: Result<Value>?
@@ -197,6 +201,79 @@ extension Future {
         }
     }
     
+    /// Creates a future that gets resolved when all child futures get resolved
+    /// If any of those futures fail, the resul future is also marked as failed
+    ///
+    /// - Parameter futures: the array of futures to wait for
+    /// - Returns: a Future
+    public static func when(all futures: [Future]) -> Future<[Value]> {
+        guard !futures.isEmpty else { return .value([]) }
+        
+        return .init { resolver in
+            let lock = NSRecursiveLock()
+            var values = Array(repeating: Value?.none, count: futures.count)
+            let subscriptions: [Subscription] = futures.enumerated().map {
+                let (index, future) = $0
+                return future.subscribe { result in
+                    switch result {
+                    case let .value(value):
+                        lock.lock(); defer { lock.unlock() }
+                        values[index] = value
+                        if !values.contains(where: { $0 == nil}) {
+                            resolver(.value(values.compactMap { $0 }))
+                        }
+                    case let .error(error): resolver(.error(error))
+                    }
+                }
+            }
+            return Subscription { subscriptions.forEach { $0.cancel() } }
+        }
+    }
+    
+    /// Creates a future that gets resolved when all child futures get resolved
+    /// If any of those futures fail, the resul future is also marked as failed
+    ///
+    /// - Parameter firstFuture: the first future from the list
+    /// - Parameter otherFutures: the rest of the array
+    /// - Returns: a Future
+    public static func when(all firstFuture: Future, _ otherFutures: Future...) -> Future<[Value]> {
+        return when(all: [firstFuture] + otherFutures)
+    }
+    
+    /// Returns a future that gets resolved with the result of the first successful future
+    /// If all future fail, the resulting future is marked as failed with the error of the
+    /// last one that fails
+    /// **Important** If the input array is empty then the future will never report
+    /// - Parameter futures: the futures to wait for
+    /// - Returns: a new Future instance
+    public static func when(firstOf futures: [Future]) -> Future {
+        return .init { resolver in
+            let lock = NSRecursiveLock()
+            var remaining = futures.count
+            let subscriptions = futures.map { future in
+                return future.subscribe { result in
+                    switch result {
+                    case .value: resolver(result)
+                    case .error:
+                        lock.lock(); defer { lock.unlock() }
+                        if remaining == 0 { resolver(result) }
+                        else { remaining -= 1 }
+                    }
+                }
+            }
+            return Subscription { subscriptions.forEach { $0.cancel() } }
+        }
+    }
+    
+    /// Returns a future that gets resolved with the result of the first successful future
+    /// If all future fail, the resulting future is marked as failed with the error of the
+    /// last one that fails
+    /// - Parameter firstFuture: the first future from the list
+    /// - Parameter otherFutures: the rest of the array
+    /// - Returns: a new Future instance
+    public static func when(firstOf firstFuture: Future, _ otherFutures: Future...) -> Future {
+        return when(firstOf: [firstFuture] + otherFutures)
+    }
     
     /// Convenience subscribing that unboxes the result and allows passing two dedicated closures:
     /// one for success, one for failure
@@ -282,8 +359,4 @@ extension Future {
             }
         }
     }
-}
-
-internal func synchronized<T>(_ lock: AnyObject, _ body: () throws -> T) rethrows -> T {
-    objc_sync_enter(lock); defer { objc_sync_exit(lock) }; return try body()
 }
