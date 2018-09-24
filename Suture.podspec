@@ -7,7 +7,7 @@
 #
 
 Pod::Spec.new do |s|
-  s.name             = 'SwiftFuture'
+  s.name             = 'Suture'
   s.version          = '0.1.0'
   s.summary          = 'Future support for Swift.'
 
@@ -21,11 +21,11 @@ Pod::Spec.new do |s|
 This library adds future support for Swift.
                        DESC
 
-  s.homepage         = 'https://github.com/cristik/SwiftFuture'
+  s.homepage         = 'https://github.com/cristik/Suture'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'cristik' => 'kocza.cristian@gmail.com' }
-  s.source           = { :git => 'https://github.com/cristik/SwiftFuture.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/cristik/Suture.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
 s.platform = :osx, :ios

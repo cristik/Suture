@@ -10,7 +10,7 @@
 		0FC2962B212441300057B063 /* Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC2962A212441300057B063 /* Result.swift */; };
 		0FF6F745211CB78D007C8697 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF6F744211CB78D007C8697 /* Future.swift */; };
 		0FF6F74D211CB7AC007C8697 /* FutureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF6F74C211CB7AC007C8697 /* FutureTests.swift */; };
-		0FF6F74F211CB7AC007C8697 /* libSwiftFuture.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FF6F738211CB6E5007C8697 /* libSwiftFuture.a */; };
+		0FF6F74F211CB7AC007C8697 /* libSuture.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FF6F738211CB6E5007C8697 /* libSuture.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,12 +25,12 @@
 
 /* Begin PBXFileReference section */
 		0FC2962A212441300057B063 /* Result.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Result.swift; sourceTree = "<group>"; };
-		0FF6F738211CB6E5007C8697 /* libSwiftFuture.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSwiftFuture.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FF6F738211CB6E5007C8697 /* libSuture.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSuture.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FF6F744211CB78D007C8697 /* Future.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Future.swift; sourceTree = "<group>"; };
-		0FF6F74A211CB7AC007C8697 /* SwiftFutureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftFutureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FF6F74A211CB7AC007C8697 /* SutureTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SutureTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FF6F74C211CB7AC007C8697 /* FutureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FutureTests.swift; sourceTree = "<group>"; };
 		0FF6F74E211CB7AC007C8697 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0FF6F755211CBC7B007C8697 /* SwiftFuture.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; path = SwiftFuture.podspec; sourceTree = "<group>"; };
+		0FF6F755211CBC7B007C8697 /* Suture.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; path = Suture.podspec; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,7 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0FF6F74F211CB7AC007C8697 /* libSwiftFuture.a in Frameworks */,
+				0FF6F74F211CB7AC007C8697 /* libSuture.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,7 +55,7 @@
 		0FF6F72F211CB6E5007C8697 = {
 			isa = PBXGroup;
 			children = (
-				0FF6F755211CBC7B007C8697 /* SwiftFuture.podspec */,
+				0FF6F755211CBC7B007C8697 /* Suture.podspec */,
 				0FF6F73A211CB6E5007C8697 /* src */,
 				0FF6F74B211CB7AC007C8697 /* test */,
 				0FF6F739211CB6E5007C8697 /* Products */,
@@ -65,8 +65,8 @@
 		0FF6F739211CB6E5007C8697 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0FF6F738211CB6E5007C8697 /* libSwiftFuture.a */,
-				0FF6F74A211CB7AC007C8697 /* SwiftFutureTests.xctest */,
+				0FF6F738211CB6E5007C8697 /* libSuture.a */,
+				0FF6F74A211CB7AC007C8697 /* SutureTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -102,9 +102,9 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		0FF6F737211CB6E5007C8697 /* SwiftFuture */ = {
+		0FF6F737211CB6E5007C8697 /* Suture */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0FF6F741211CB6E5007C8697 /* Build configuration list for PBXNativeTarget "SwiftFuture" */;
+			buildConfigurationList = 0FF6F741211CB6E5007C8697 /* Build configuration list for PBXNativeTarget "Suture" */;
 			buildPhases = (
 				0FF6F734211CB6E5007C8697 /* Sources */,
 				0FF6F735211CB6E5007C8697 /* Frameworks */,
@@ -114,14 +114,14 @@
 			);
 			dependencies = (
 			);
-			name = SwiftFuture;
+			name = Suture;
 			productName = SwiftFuture;
-			productReference = 0FF6F738211CB6E5007C8697 /* libSwiftFuture.a */;
+			productReference = 0FF6F738211CB6E5007C8697 /* libSuture.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		0FF6F749211CB7AC007C8697 /* SwiftFutureTests */ = {
+		0FF6F749211CB7AC007C8697 /* SutureTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0FF6F752211CB7AC007C8697 /* Build configuration list for PBXNativeTarget "SwiftFutureTests" */;
+			buildConfigurationList = 0FF6F752211CB7AC007C8697 /* Build configuration list for PBXNativeTarget "SutureTests" */;
 			buildPhases = (
 				0FF6F746211CB7AC007C8697 /* Sources */,
 				0FF6F747211CB7AC007C8697 /* Frameworks */,
@@ -132,9 +132,9 @@
 			dependencies = (
 				0FF6F751211CB7AC007C8697 /* PBXTargetDependency */,
 			);
-			name = SwiftFutureTests;
+			name = SutureTests;
 			productName = SwiftFutureTests;
-			productReference = 0FF6F74A211CB7AC007C8697 /* SwiftFutureTests.xctest */;
+			productReference = 0FF6F74A211CB7AC007C8697 /* SutureTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -156,7 +156,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 0FF6F733211CB6E5007C8697 /* Build configuration list for PBXProject "SwiftFuture" */;
+			buildConfigurationList = 0FF6F733211CB6E5007C8697 /* Build configuration list for PBXProject "Suture" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -168,8 +168,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0FF6F737211CB6E5007C8697 /* SwiftFuture */,
-				0FF6F749211CB7AC007C8697 /* SwiftFutureTests */,
+				0FF6F737211CB6E5007C8697 /* Suture */,
+				0FF6F749211CB7AC007C8697 /* SutureTests */,
 			);
 		};
 /* End PBXProject section */
@@ -207,7 +207,7 @@
 /* Begin PBXTargetDependency section */
 		0FF6F751211CB7AC007C8697 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 0FF6F737211CB6E5007C8697 /* SwiftFuture */;
+			target = 0FF6F737211CB6E5007C8697 /* Suture */;
 			targetProxy = 0FF6F750211CB7AC007C8697 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -402,7 +402,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0FF6F733211CB6E5007C8697 /* Build configuration list for PBXProject "SwiftFuture" */ = {
+		0FF6F733211CB6E5007C8697 /* Build configuration list for PBXProject "Suture" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0FF6F73F211CB6E5007C8697 /* Debug */,
@@ -411,7 +411,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0FF6F741211CB6E5007C8697 /* Build configuration list for PBXNativeTarget "SwiftFuture" */ = {
+		0FF6F741211CB6E5007C8697 /* Build configuration list for PBXNativeTarget "Suture" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0FF6F742211CB6E5007C8697 /* Debug */,
@@ -420,7 +420,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0FF6F752211CB7AC007C8697 /* Build configuration list for PBXNativeTarget "SwiftFutureTests" */ = {
+		0FF6F752211CB7AC007C8697 /* Build configuration list for PBXNativeTarget "SutureTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0FF6F753211CB7AC007C8697 /* Debug */,
