@@ -13,6 +13,10 @@ public enum Result<Value> {
     case failure(Error)
 }
 
+protocol FutureResolver {
+    
+}
+
 public final class Future<Value> {
     private typealias SuccessHandler = (Value) -> Void
     private typealias FailureHandler = (Error) -> Void
@@ -53,10 +57,6 @@ public final class Future<Value> {
     
     public init(_ worker: (@escaping (Result<Value>) -> Void) -> Void) {
         worker(resolve(with:))
-    }
-    
-    public init(_ computation: @autoclosure () throws -> Value) {
-        do { try resolve(with: .success(computation())) } catch { resolve(with: .failure(error)) }
     }
     
     @discardableResult
