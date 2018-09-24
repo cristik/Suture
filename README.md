@@ -34,7 +34,7 @@ The above future executes the expensive computation on some background queue.
 
 ### Observation
 Futures can be observed via the `await` and `wait` methods:
-
+```swift
 future.await { result in
     switch result {
     case let .value(value): print("Success: \(value)")
@@ -44,11 +44,13 @@ future.await { result in
 
 // or synchronously
 let result = future.wait()
-
+```
 Convenience methods exist for observing only success or failure:
+```swift
 future
     .await(onValue: { print("Success: \($0)") }
            onError: { print("Error: \($0)") })
+```
 
 ## Installation
 
