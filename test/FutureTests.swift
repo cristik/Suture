@@ -47,4 +47,12 @@ class FutureTests: XCTestCase {
         Future<Int>.retrying(3) { executionCount += 1; $0(.error(FutureTestsError.one)) }.subscribe { _ in }
         XCTAssertEqual(executionCount, 3)
     }
+    
+    func test_map_reportsValue_onSuccess() {
+        var result: String?
+        Future.value(2).map(map(String.init)).subscribe {
+            result = $0.value
+        }
+        XCTAssertEqual(result, "2")
+    }
 }
