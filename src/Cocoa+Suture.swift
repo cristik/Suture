@@ -35,6 +35,22 @@ extension DispatchQueue: Dispatcher {
     }
 }
 
+extension DispatchQueue {
+    /// Dispatches async the given computation and creates a Future that gets resolved
+    /// with the value returned by the closure, or gets rejected with the thrown error
+    ///
+    /// - Parameter block: the computation to execute async
+    /// - Returns: a Future
+    public func suFuture<T>(_ computation: @escaping () throws -> T) -> Future<T> {
+        return .init { resolver in
+            self.async {
+                do { try resolver(.value(computation())) } catch { resolver(.error(error)) }
+            }
+            return Subscription()
+        }
+    }
+}
+
 extension URLSession {
     /// Creates a Future whose worker sends an HTTP GET request to the given URL.
     /// In case of success the Future reports a tuple containing the response and the data

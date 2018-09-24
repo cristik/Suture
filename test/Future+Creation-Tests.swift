@@ -23,39 +23,28 @@
 // OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 // ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// A Result holds the result of a computation that can fail. In case the computation suceeds
-/// the result is set with the .value case, in case it fails it's set with the .error case
-///
-/// - value: the success path
-/// - error: the error path
-public enum Result<Value> {
-    case value(Value)
-    case error(Error)
-    
-    func map<T>(_ transform: (Value) throws -> T) -> Result<T> {
-        do {
-            switch self {
-            case let .value(value): return try .value(transform(value))
-            case let .error(error): throw error
-            }
-        } catch {
-            return .error(error)
-        }
-    }
-    
-    func flatMap<T>(_ transform: (Value) throws -> Result<T>) -> Result<T> {
-        do {
-            switch self {
-            case let .value(value): return try transform(value)
-            case let .error(error): throw error
-            }
-        } catch {
-            return .error(error)
-        }
-    }
-}
+import XCTest
+@testable import Suture
 
-public extension Result {
-    public var value: Value? { if case let .value(value) = self { return value } else { return nil } }
-    public var error: Error? { if case let .error(error) = self { return error } else { return nil } }
+final class FutureCreationTests: XCTestCase {
+    
+    func test_init_doesntStartWorkRightAway() {
+        var executed = false
+        _ = Future<Void> { _ in
+            executed = true; return Subscription()
+        }
+        XCTAssertFalse(executed)
+    }
+    
+    func test_value_reportsSuccess() {
+        var result = Result<String>?.none
+        Future<String>.value("abc").subscribe { result = $0 }
+        XCTAssertEqual(result?.value, "abc")
+    }
+    
+    func test_error_reportsError() {
+        var result = Result<String>?.none
+        Future<String>.error(FutureTestsError.second).subscribe { result = $0 }
+        XCTAssertEqual(result?.error as? FutureTestsError, .second)
+    }
 }
