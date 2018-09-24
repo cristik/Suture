@@ -33,7 +33,7 @@ import Foundation
     private var isCanceled = false
     private var cancelAction: (() -> Void)?
     
-    internal init(_ cancelAction:  (() -> Void)? = nil) {
+    public init(_ cancelAction:  (() -> Void)? = nil) {
         self.cancelAction = cancelAction
     }
     

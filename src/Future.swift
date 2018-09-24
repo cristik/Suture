@@ -38,8 +38,11 @@ public final class Future<Value> {
     /// Susbcriber
     public typealias Subscriber = (Result<Value>) -> Void
     
+    /// Resolver
+    public typealias Resolver = (Result<Value>) -> Void
+    
     /// Worker
-    public typealias Worker = (@escaping Subscriber) -> Subscription
+    public typealias Worker = (@escaping Resolver) -> Subscription
     
     fileprivate let worker: Worker
     
@@ -326,7 +329,7 @@ extension Future {
         }
     }
     
-    /// Convenience error for flatMapping a success value
+    /// Convenience method for flatMapping a success value
     ///
     /// - Parameter transform: the transform to apply on the succesful value
     /// - Returns: a new Future, the callee remains unaffected
@@ -343,7 +346,7 @@ extension Future {
         }
     }
     
-    /// Convenience error for flatMapping a failure error
+    /// Convenience method for flatMapping a failure error
     ///
     /// - Parameter transform: the transform to apply on the received error
     /// - Returns: a new Future, the callee remains unaffected

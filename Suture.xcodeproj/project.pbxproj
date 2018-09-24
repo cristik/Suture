@@ -33,6 +33,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0F4565C6214CCE540072D7E1 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		0FAEBCC8214A1C9E0053DB61 /* Future+Subscribe-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Subscribe-Tests.swift"; sourceTree = "<group>"; };
 		0FAEBCCA214A1CC00053DB61 /* Common.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Common.swift; sourceTree = "<group>"; };
 		0FAEBCCC214A1D180053DB61 /* Future+Operators-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Operators-Tests.swift"; sourceTree = "<group>"; };
@@ -73,6 +74,7 @@
 		0FF6F72F211CB6E5007C8697 = {
 			isa = PBXGroup;
 			children = (
+				0F4565C6214CCE540072D7E1 /* Package.swift */,
 				0FF6F755211CBC7B007C8697 /* Suture.podspec */,
 				0FF6F73A211CB6E5007C8697 /* src */,
 				0FF6F74B211CB7AC007C8697 /* test */,

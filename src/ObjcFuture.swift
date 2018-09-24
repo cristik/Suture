@@ -52,7 +52,7 @@ import Foundation
 }
 
 /// Class that bridges to Objective-C, allowing callers from Objective-C to use a Future created
-/// on the Swift side. Currently there is no support for creating or transformint futures in
+/// on the Swift side. Currently there is no support for creating or transforming futures in
 /// Objective-C, only to use them
 @objc(SUFuture) @objcMembers public final class ObjcFuture: NSObject {
     public typealias Subscriber = (ObjcResult) -> Void

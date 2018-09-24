@@ -28,10 +28,10 @@ import XCTest
 
 final class CocoaSutureTests: XCTestCase {
     
-    func test_suFuture_dispatchesAsyncAndReports() {
+    func test_asyncFuture_dispatchesAsyncAndReports() {
         var value: String?
         let exp = expectation(description: #function)
-        DispatchQueue.main.suFuture { return "15" }.subscribe { value = $0.value; exp.fulfill() }
+        DispatchQueue.main.asyncFuture { return "15" }.subscribe { value = $0.value; exp.fulfill() }
         waitForExpectations(timeout: 0.0001)
         XCTAssertEqual(value, "15")
     }

@@ -41,7 +41,7 @@ extension DispatchQueue {
     ///
     /// - Parameter block: the computation to execute async
     /// - Returns: a Future
-    public func suFuture<T>(_ computation: @escaping () throws -> T) -> Future<T> {
+    public func asyncFuture<T>(_ computation: @escaping () throws -> T) -> Future<T> {
         return .init { resolver in
             self.async {
                 do { try resolver(.value(computation())) } catch { resolver(.error(error)) }
@@ -51,23 +51,18 @@ extension DispatchQueue {
     }
 }
 
+public struct SUHTTPResponse<T> {
+    public let response: HTTPURLResponse
+    public let data: T
+}
+
 extension URLSession {
-    public struct SUHTTPGenericResponse {
-        let response: HTTPURLResponse
-        let data: Data
-    }
-    
-    public struct SUHTTPResponse<T: Decodable> {
-        let response: HTTPURLResponse
-        let data: T
-    }
-    
     /// Creates a Future whose worker sends an HTTP GET request to the given URL.
     /// In case of success the Future reports a tuple containing the response and the data
     ///
     /// - Parameter url: the url to query
     /// - Returns: a Future
-    public func httpData(from url: URL) -> Future<SUHTTPGenericResponse> {
+    public func httpData(from url: URL) -> Future<SUHTTPResponse<Data>> {
         return httpData(for: URLRequest(url: url))
     }
     
@@ -76,7 +71,7 @@ extension URLSession {
     ///
     /// - Parameter url: the url request to send
     /// - Returns: a Future
-    public func httpData(for request: URLRequest) -> Future<SUHTTPGenericResponse> {
+    public func httpData(for request: URLRequest) -> Future<SUHTTPResponse<Data>> {
         return .init { resolver in
             let task = self.dataTask(with: request) { data, response, error in
                 if let error = error {

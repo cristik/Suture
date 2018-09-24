@@ -37,6 +37,28 @@ final class FutureOperatorsTests: XCTestCase {
         XCTAssertEqual(executionCount, 3)
     }
     
+    func test_retry_cancelsTheFirstAttemptIfNotStarted() {
+        var cancelled = false
+        let subscription = Future<Int> { _ in return Subscription { cancelled = true } }
+            .retry(5)
+            .subscribe()
+        subscription.cancel()
+        XCTAssertTrue(cancelled)
+    }
+    
+    func test_retry_cancelsTheSecondAttemptIfTheFirstFailed() {
+        var resolvers = [Future<Int>.Resolver]()
+        var cancellations = Array(repeatElement(false, count: 5))
+        let subscription = Future<Int> { resolvers.append($0); return Subscription { cancellations[resolvers.count-1] = true } }
+            .retry(5)
+            .subscribe()
+        resolvers[0](.error(FutureTestsError.first))
+        subscription.cancel()
+        XCTAssertFalse(cancellations[0])
+        XCTAssertTrue(cancellations[1])
+        XCTAssertFalse(cancellations[2])
+    }
+    
     func test_map_reportsValue_onSuccess() {
         var result: String?
         Future.value(2).mapValue     { String($0) }.subscribe {
