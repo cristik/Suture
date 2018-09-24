@@ -19,7 +19,7 @@
 			containerPortal = 0FF6F730211CB6E5007C8697 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 0FF6F737211CB6E5007C8697;
-			remoteInfo = SwiftFuture;
+			remoteInfo = Suture;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -115,7 +115,7 @@
 			dependencies = (
 			);
 			name = Suture;
-			productName = SwiftFuture;
+			productName = Suture;
 			productReference = 0FF6F738211CB6E5007C8697 /* libSuture.a */;
 			productType = "com.apple.product-type.library.static";
 		};
@@ -133,7 +133,7 @@
 				0FF6F751211CB7AC007C8697 /* PBXTargetDependency */,
 			);
 			name = SutureTests;
-			productName = SwiftFutureTests;
+			productName = SutureTests;
 			productReference = 0FF6F74A211CB7AC007C8697 /* SutureTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -371,7 +371,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.cristik.SwiftFutureTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cristik.SutureTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -391,7 +391,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.cristik.SwiftFutureTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cristik.SutureTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";

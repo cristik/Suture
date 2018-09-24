@@ -1,5 +1,5 @@
 #
-# Be sure to run `pod lib lint SwiftFuture.podspec' to ensure this is a
+# Be sure to run `pod lib lint Suture.podspec' to ensure this is a
 # valid spec before submitting.
 #
 # Any lines starting with a # are optional, but their use is encouraged
@@ -36,7 +36,7 @@ s.platform = :osx, :ios
   s.source_files = 'src/*.swift'
 
   # s.resource_bundles = {
-  #   'SwiftFuture' => ['SwiftFuture/Assets/*.png']
+  #   'Suture' => ['Suture/Assets/*.png']
   # }
 
   # s.public_header_files = 'Pod/Classes/**/*.h'

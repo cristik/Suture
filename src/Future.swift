@@ -1,6 +1,6 @@
 //
 //  Future.swift
-//  SwiftFuture
+//  Suture
 //
 //  Created by Cristian Kocza on 09/08/2018.
 //  Copyright © 2018 cristik. All rights reserved.
