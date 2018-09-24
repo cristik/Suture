@@ -9,160 +9,184 @@
 import Foundation
 
 public enum Result<Value> {
-    case success(Value)
-    case failure(Error)
+    case value(Value)
+    case error(Error)
+}
+
+public class Subscription {
+    public private(set) var isCancelled = false
+    
+    public func cancel() {
+        synchronized(self) { isCancelled = true }
+    }
+}
+
+public protocol Dispatcher {
+    func dispatch(_ block: @escaping () -> Void)
 }
 
 public final class Future<Value> {
-    private typealias SuccessHandler = (Value) -> Void
-    private typealias FailureHandler = (Error) -> Void
+    public typealias ResultHandler = (Result<Value>) -> Void
     public typealias Worker = (@escaping (Result<Value>) -> Void) -> Void
-    private enum State { case pending, success(Value), failure(Error) }
     
-    private var successHandlers = [SuccessHandler]()
-    private var failureHandlers = [FailureHandler]()
-    private var state = State.pending
-    private let worker: Worker
-    
-    private func register(success: SuccessHandler? = nil, failure: FailureHandler? = nil) {
-        synchronized(self) {
-            switch state {
-            case .pending:
-                success.map { successHandlers.append($0) }
-                failure.map { failureHandlers.append($0) }
-            case let .success(value):
-                success?(value)
-            case let .failure(error):
-                failure?(error)
-            }
-        }
-    }
+    fileprivate var registrations = [ResultHandler]()
+    private var result = Result<Value>?.none
+    private var worker: Worker?
+    private var dispatcher: Dispatcher?
     
     private func resolve(with result: Result<Value>) {
         synchronized(self) {
+            registrations.forEach { $0(result) }
+            registrations = []
+        }
+    }
+    
+    private func register(on dispatcher: Dispatcher? = nil, handler: @escaping ResultHandler) {
+        synchronized(self) {
+            // intended retaing cycle, will be broken when the future receives a result
+            let wrapped = { result in (dispatcher ?? self.dispatcher).map { $0.dispatch { handler(result) } } ?? handler(result) }
             switch result {
-            case let .success(value):
-                state = .success(value)
-                successHandlers.forEach { $0(value) }
-            case let .failure(error):
-                state = .failure(error)
-                failureHandlers.forEach { $0(error) }
+            case .none:
+                registrations.append(wrapped)
+            case let .some(result):
+                wrapped(result)
             }
-            successHandlers = []
-            failureHandlers = []
         }
     }
     
     public init(_ worker: @escaping Worker) {
         self.worker = worker
-        worker(resolve(with:))
+        dispatcher = nil
+    }
+    
+    public func dispatch(on dispatcher: Dispatcher) -> Future<Value> {
+        return Future { resolver in
+            self.register(on:dispatcher, handler: resolver)
+        }
     }
     
     @discardableResult
-    public func `try`(_ handler: @escaping (Value) -> Void) -> FutureTry<Value> {
-        let futureTry = FutureTry(self)
-        register(success: handler)
-        return futureTry
+    public func subscribe(_ handler: @escaping (Result<Value>) -> Void) -> Subscription {
+        return synchronized(self) {
+            // this is one lazy future :)
+            worker?(resolve(with:))
+            worker = nil
+            
+            let subscription = Subscription()
+            register { result in if !subscription.isCancelled { handler(result) } }
+            return subscription
+        }
     }
     
-    @discardableResult
-    public func `catch`<E: Error>(_ handler: @escaping (E) -> Void) -> FutureCatch<Value> {
-        register(failure: { ($0 as? E).map(handler) })
-        return FutureCatch(self)
+    public func map<T>(_ transform: @escaping (Result<Value>) throws -> Result<T>) -> Future<T> {
+        return .init { resolver in
+            self.register { result in
+                do { try resolver(transform(result)) } catch { resolver(.error(error)) }
+            }
+        }
     }
     
-    @discardableResult
-    public func `catch`(_ handler: @escaping (Error) -> Void) -> FutureCatch<Value> {
-        register(failure: handler)
-        return FutureCatch(self)
-    }
-    
-    public func `finally`(_ handler: @escaping () -> Void) -> FutureFinal<Value> {
-        register(success: { _ in handler() }, failure: { _ in handler() })
-        return FutureFinal(self)
+    public func flatMap<T>(_ transform: @escaping (Result<Value>) throws -> Future<T>) -> Future<T> {
+        return .init { resolver in
+            self.register { result in
+                do { try transform(result).register(handler: resolver) } catch { resolver(.error(error)) }
+            }
+        }
     }
 }
 
 extension Future {
-    func map<T>(_ transform: @escaping (Value) throws -> T) -> Future<T> {
-        return Future<T> { (resolver: @escaping (Result<T>) -> Void) -> Void in
-            self.try { do { try resolver(.success(transform($0))) } catch { resolver(.failure(error)) } }
-                .catch { resolver(.failure($0)) }
+    
+    public static func value(_ value: Value) -> Future<Value> {
+        return .init { $0(.value(value)) }
+    }
+    
+    public static func error(_ error: Error) -> Future<Value> {
+        return .init { $0(.error(error)) }
+    }
+    
+    public static func retrying(_ times: Int, _ worker: @escaping Worker) -> Future<Value> {
+        let times = max(times, 0)
+        var attempts = 1
+        var originalResolver: ((Result<Value>) -> Void)!
+        var modifiedResolver: ((Result<Value>) -> Void)!
+        modifiedResolver = { result in
+            switch result {
+            case .value: originalResolver(result)
+            case .error:
+                if attempts < times {
+                    attempts += 1
+                    worker(modifiedResolver)
+                } else {
+                    originalResolver(result)
+                }
+            }
+        }
+        return Future { resolver in
+            originalResolver = resolver
+            worker(modifiedResolver)
         }
     }
     
-    func flatMap<T>(_ transform: @escaping (Value) throws -> Future<T>) -> Future<T> {
-        return Future<T> { (resolver: @escaping (Result<T>) -> Void) -> Void in
-            self.try { do { try transform($0).try { resolver(.success($0)) }.catch { resolver(.failure($0)) } } catch { resolver(.failure(error)) } }
-                .catch { resolver(.failure($0)) }
+    public func subscribe(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)?) -> Subscription {
+        return subscribe { result in
+            switch result {
+            case let .value(value): onValue?(value)
+            case let .error(error): onError?(error)
+            }
         }
     }
-}
-
-public protocol Cancelable {
-    func cancel()
-}
-
-public class FutureTry<Value>: Cancelable {
-    private var future: Future<Value>
-    private var isCancelled = false
     
-    fileprivate init(_ future: Future<Value>) {
-        self.future = future
+    public func mapValue<T>(_ transform: @escaping (Value) throws -> T) -> Future<T> {
+        return map { result in
+            do {
+                switch result {
+                case let .value(value): return try .value(transform(value))
+                case let .error(error): throw error
+                }
+            } catch {
+                return .error(error)
+            }
+        }
     }
     
-    deinit { cancel() }
-    
-    public func cancel() {
-        synchronized(self) { isCancelled = true }
+    public func mapError(_ transform: @escaping (Error) throws -> Value) -> Future<Value> {
+        return map { result in
+            do {
+                switch result {
+                case let .value(value): return .value(value)
+                case let .error(error): return try .value(transform(error))
+                }
+            } catch {
+                return .error(error)
+            }
+        }
     }
     
-    @discardableResult
-    public func `catch`<E: Error>(_ handler: @escaping (E) -> Void) -> FutureCatch<Value> {
-        
+    public func flatMapValue<T>(_ transform: @escaping (Value) throws -> Future<T>) -> Future<T> {
+        return flatMap { result in
+            do {
+                switch result {
+                case let .value(value): return try transform(value)
+                case let .error(error): throw error
+                }
+            } catch {
+                return .error(error)
+            }
+        }
     }
     
-    @discardableResult
-    public func `catch`(_ handler: @escaping (Error) -> Void) -> FutureCatch<Value> {
-        
-    }
-    
-    public func `finally`(_ handler: @escaping () -> Void) -> FutureFinal<Value> {
-        
-    }
-}
-
-public class FutureCatch<Value>: Cancelable {
-    private var future: Future<Value>
-    private var isCancelled = false
-    
-    fileprivate init(_ future: Future<Value>) {
-        self.future = future
-    }
-    
-    deinit { cancel() }
-    
-    public func cancel() {
-        synchronized(self) { isCancelled = true }
-    }
-    
-    public func `finally`(_ handler: @escaping () -> Void) {
-        
-    }
-}
-
-public class FutureFinal<Value>: Cancelable {
-    private var future: Future<Value>
-    private var isCancelled = false
-    
-    fileprivate init(_ future: Future<Value>) {
-        self.future = future
-    }
-    
-    deinit { cancel() }
-    
-    public func cancel() {
-        synchronized(self) { isCancelled = true }
+    public func flatMapError(_ transform: @escaping (Error) throws -> Future<Value>) -> Future<Value> {
+        return flatMap { result in
+            do {
+                switch result {
+                case let .value(value): return .value(value)
+                case let .error(error): return try transform(error)
+                }
+            } catch {
+                return .error(error)
+            }
+        }
     }
 }
 
