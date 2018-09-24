@@ -25,11 +25,11 @@
 
 import Foundation
 
-/// A Subscription is obtained after calling `subscribe` on a Future. The subscription
+/// A Cancelable is obtained after calling `subscribe` on a Future. The subscription
 /// allows cancellation, and if the worker used to create the Future supports cancellation
 /// then the cancellation will be forwarded there. Regardless of the worker behaviour
 /// the closure passed to `subscribe` will not be executed if the subscription is cancelled.
-@objc(SUSubscription) @objcMembers public class Subscription: NSObject {
+@objc(SUCancelable) @objcMembers public class Cancelable: NSObject {
     private var isCanceled = false
     private var cancelAction: (() -> Void)?
     

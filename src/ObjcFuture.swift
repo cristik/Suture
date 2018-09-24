@@ -56,7 +56,7 @@ import Foundation
 /// Objective-C, only to use them
 @objc(SUFuture) @objcMembers public final class ObjcFuture: NSObject {
     public typealias Subscriber = (ObjcResult) -> Void
-    public typealias Worker = (@escaping Subscriber) -> Subscription
+    public typealias Worker = (@escaping Subscriber) -> Cancelable
     
     private let future: Future<Any>
     
@@ -65,8 +65,8 @@ import Foundation
     }
     
     @discardableResult
-    public func subscribe(_ handler: @escaping Subscriber) -> Subscription {
-        return future.subscribe { handler(ObjcResult($0)) }
+    public func subscribe(_ handler: @escaping Subscriber) -> Cancelable {
+        return future.await { handler(ObjcResult($0)) }
     }
 }
 

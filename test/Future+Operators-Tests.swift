@@ -32,14 +32,14 @@ final class FutureOperatorsTests: XCTestCase {
         Future<Int> { resolver in
             executionCount += 1
             resolver(.error(FutureTestsError.first))
-            return Subscription()
+            return Cancelable()
             }.retry(3).subscribe()
         XCTAssertEqual(executionCount, 3)
     }
     
     func test_retry_cancelsTheFirstAttemptIfNotStarted() {
         var cancelled = false
-        let subscription = Future<Int> { _ in return Subscription { cancelled = true } }
+        let subscription = Future<Int> { _ in return Cancelable { cancelled = true } }
             .retry(5)
             .subscribe()
         subscription.cancel()
@@ -49,7 +49,7 @@ final class FutureOperatorsTests: XCTestCase {
     func test_retry_cancelsTheSecondAttemptIfTheFirstFailed() {
         var resolvers = [Future<Int>.Resolver]()
         var cancellations = Array(repeatElement(false, count: 5))
-        let subscription = Future<Int> { resolvers.append($0); return Subscription { cancellations[resolvers.count-1] = true } }
+        let subscription = Future<Int> { resolvers.append($0); return Cancelable { cancellations[resolvers.count-1] = true } }
             .retry(5)
             .subscribe()
         resolvers[0](.error(FutureTestsError.first))
@@ -61,7 +61,7 @@ final class FutureOperatorsTests: XCTestCase {
     
     func test_map_reportsValue_onSuccess() {
         var result: String?
-        Future.value(2).mapValue     { String($0) }.subscribe {
+        Future.value(2).mapValue     { String($0) }.await {
             result = $0.value
         }
         XCTAssertEqual(result, "2")
@@ -80,15 +80,15 @@ final class FutureOperatorsTests: XCTestCase {
         var count = 0
         var results = [Int?]()
         let future = Future<Int> { count += 1; $0(.value(count)); return .init() }.keep()
-        future.subscribe { results.append($0.value) }
-        future.map { $0.map { $0 * 2} }.subscribe { results.append($0.value) }
-        future.subscribe { results.append($0.value) }
+        future.await { results.append($0.value) }
+        future.map { $0.map { $0 * 2} }.await { results.append($0.value) }
+        future.await { results.append($0.value) }
         XCTAssertEqual(results, [.some(1), .some(2), .some(1)])
     }
     
     func test_flatMap_doesntStartTheChainIfNotSubscribed() {
         var started = false
-        let future = Future<Int> { _ in started = true; return Subscription() }
+        let future = Future<Int> { _ in started = true; return Cancelable() }
             .flatMap { .value("\($0)") }
         XCTAssertFalse(started)
         future.subscribe()
@@ -99,7 +99,7 @@ final class FutureOperatorsTests: XCTestCase {
         var value: String?
         Future<Int>.error(FutureTestsError.first)
             .flatMap { _ in .value("12") }
-            .subscribe { value = $0.value }
+            .await { value = $0.value }
         XCTAssertEqual(value, "12")
     }
     
@@ -107,7 +107,7 @@ final class FutureOperatorsTests: XCTestCase {
         var error: FutureTestsError?
         Future<Int>.value(97)
             .flatMap { _ in Future<String>.error(FutureTestsError.second) }
-            .subscribe { error = $0.error as? FutureTestsError }
+            .await { error = $0.error as? FutureTestsError }
         XCTAssertEqual(error, .second)
     }
     
@@ -115,13 +115,13 @@ final class FutureOperatorsTests: XCTestCase {
         var value: String?
         Future<Int>.value(99)
             .flatMap { .value("\($0.value!)") }
-            .subscribe { value = $0.value }
+            .await { value = $0.value }
         XCTAssertEqual(value, "99")
     }
     
     func test_flatMap_cancelsTheOriginal() {
         var cancelled = false
-        let subscription = Future<Int> { _ in Subscription { cancelled = true } }
+        let subscription = Future<Int> { _ in Cancelable { cancelled = true } }
             .flatMap { .value("\($0)") }
             .subscribe()
         XCTAssertFalse(cancelled)

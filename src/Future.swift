@@ -36,20 +36,20 @@ import Foundation
 /// that caches the result of the first computation
 public final class Future<Value> {
     /// Susbcriber
-    public typealias Subscriber = (Result<Value>) -> Void
+    public typealias Handler = (Result<Value>) -> Void
     
     /// Resolver
     public typealias Resolver = (Result<Value>) -> Void
     
     /// Worker
-    public typealias Worker = (@escaping Resolver) -> Subscription
+    public typealias Worker = (@escaping Resolver) -> Cancelable
     
     fileprivate let worker: Worker
     
     /// Creates a Future that uses the given worker as resolver for the future value
     ///
-    /// - Parameter worker: a closure that computes the Future value
-    public required init(worker: @escaping Worker) {
+    /// - Parameter worker: a closure that computes and reports the Future result
+    public required init(_ worker: @escaping Worker) {
         self.worker = worker
     }
     
@@ -57,7 +57,7 @@ public final class Future<Value> {
     ///
     /// - Parameter handler: the closure to execute on completion
     /// - Returns: a Subscription that can be cancelled
-    @discardableResult public func subscribe(_ handler: @escaping Subscriber) -> Subscription {
+    @discardableResult public func await(_ handler: @escaping Handler) -> Cancelable {
         return worker(handler)
     }
 }
@@ -69,7 +69,7 @@ extension Future {
     /// - Parameter value: the value to report
     /// - Returns: a Future instance. Each subscriber will be notified with the given value
     public static func value(_ value: Value) -> Future<Value> {
-        return .init { $0(.value(value)); return Subscription() }
+        return .init { $0(.value(value)); return Cancelable() }
     }
     
     /// Creates a failed Future
@@ -77,7 +77,7 @@ extension Future {
     /// - Parameter error: the error to report
     /// - Returns: a Future instance. Each subscriber will be notified with the given error
     public static func error(_ error: Error) -> Future<Value> {
-        return .init { $0(.error(error)); return Subscription() }
+        return .init { $0(.error(error)); return Cancelable() }
     }
     
     /// Creates a future that never resolves, but throws an assertion in Debug builds
@@ -88,7 +88,34 @@ extension Future {
     /// - Returns: a Future instance that never notifies its subscribers
     public static func placeholder() -> Future<Value> {
         assertionFailure("Not yet implemented")
-        return .init { _ in return Subscription() }
+        return .init { _ in return Cancelable() }
+    }
+    
+    /// Synchronously waits until the Future gets a result
+    ///
+    /// - Returns: the Future result
+    @discardableResult public func wait() -> Result<Value> {
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: Result<Value>!
+        await { result = $0; semaphore.signal() }
+        semaphore.wait()
+        return result
+    }
+    
+    /// Synchronously waits until either the Future gets a result or the timeout ellapses
+    ///
+    /// - Parameter timeout: the time to wait
+    /// - Parameter timeoutError: the error to report in case of failure
+    /// - Returns: the Future result
+    @discardableResult public func wait(for timeout: TimeInterval, timeoutError: Error) -> Result<Value> {
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: Result<Value>!
+        await { result = $0; semaphore.signal() }
+        if semaphore.wait(timeout: .now() + timeout) == .success {
+            return result
+        } else {
+            return .error(timeoutError)
+        }
     }
     
     /// Creates a Future that sends the worker closure on the given dispatcher
@@ -97,7 +124,7 @@ extension Future {
     /// - Returns: a new Future, the callee remains unaffected
     public func working(on dispatcher: Dispatcher) -> Future<Value> {
         return .init { resolver in
-            var subscription: Subscription?
+            var subscription: Cancelable?
             var canceled = false
             dispatcher.dispatch {
                 // TODO: can there occur race condition on the assign?
@@ -105,7 +132,7 @@ extension Future {
                     subscription = self.worker(resolver)
                 }
             }
-            return Subscription {
+            return Cancelable {
                 canceled = true
                 subscription?.cancel()
             }
@@ -118,8 +145,8 @@ extension Future {
     /// - Returns: a new Future, the callee remains unaffected
     public func subscribing(on dispatcher: Dispatcher) -> Future<Value> {
         return .init { resolver in
-            let subscription = self.subscribe(resolver)
-            return Subscription { subscription.cancel() }
+            let subscription = self.await(resolver)
+            return Cancelable { subscription.cancel() }
         }
     }
     
@@ -129,8 +156,8 @@ extension Future {
     /// - Returns: a new Future, the callee remains unaffected
     public func map<T>(_ transform: @escaping (Result<Value>) -> Result<T>) -> Future<T> {
         return .init { resolver in
-            let subscription = self.subscribe { resolver(transform($0)) }
-            return Subscription { subscription.cancel() }
+            let subscription = self.await { resolver(transform($0)) }
+            return Cancelable { subscription.cancel() }
         }
     }
     
@@ -141,11 +168,11 @@ extension Future {
     /// - Returns: a new Future, the callee remains unaffected
     public func flatMap<T>(_ transform: @escaping (Result<Value>) -> Future<T>) -> Future<T> {
         return .init { resolver in
-            var innerSubscription = Subscription?.none
-            let subscription = self.subscribe { result in
-                innerSubscription = transform(result).subscribe(resolver)
+            var innerSubscription = Cancelable?.none
+            let subscription = self.await { result in
+                innerSubscription = transform(result).await(resolver)
             }
-            return Subscription { subscription.cancel(); innerSubscription?.cancel() }
+            return Cancelable { subscription.cancel(); innerSubscription?.cancel() }
         }
     }
     
@@ -157,19 +184,19 @@ extension Future {
     public func retry(_ times: Int) -> Future<Value> {
         return .init { resolver in
             var remaining = times - 1
-            var handler: Subscriber!
-            var subscription: Subscription!
+            var handler: Handler!
+            var subscription: Cancelable!
             handler = { result in
                 switch result {
                 case .value,
                      .error where remaining <= 0: resolver(result)
                 case .error:
                     remaining -= 1
-                    subscription = self.subscribe(handler)
+                    subscription = self.await(handler)
                 }
             }
-            subscription = self.subscribe(handler)
-            return Subscription { subscription.cancel() }
+            subscription = self.await(handler)
+            return Cancelable { subscription.cancel() }
         }
     }
     
@@ -183,7 +210,7 @@ extension Future {
         let lock = NSRecursiveLock()
         var started = false
         var result: Result<Value>?
-        var subscribers = [Subscriber]()
+        var subscribers = [Handler]()
         return .init { resolver in
             lock.lock(); defer { lock.unlock() }
             if let result = result {
@@ -192,7 +219,7 @@ extension Future {
                 subscribers.append(resolver)
                 if !started {
                     started = true
-                    self.subscribe { res in
+                    self.await { res in
                         lock.lock(); defer { lock.unlock() }
                         result = res
                         subscribers.forEach { $0(res) }
@@ -200,7 +227,7 @@ extension Future {
                     }
                 }
             }
-            return Subscription()
+            return Cancelable()
         }
     }
     
@@ -215,9 +242,9 @@ extension Future {
         return .init { resolver in
             let lock = NSRecursiveLock()
             var values = Array(repeating: Value?.none, count: futures.count)
-            let subscriptions: [Subscription] = futures.enumerated().map {
+            let subscriptions: [Cancelable] = futures.enumerated().map {
                 let (index, future) = $0
-                return future.subscribe { result in
+                return future.await { result in
                     switch result {
                     case let .value(value):
                         lock.lock(); defer { lock.unlock() }
@@ -229,7 +256,7 @@ extension Future {
                     }
                 }
             }
-            return Subscription { subscriptions.forEach { $0.cancel() } }
+            return Cancelable { subscriptions.forEach { $0.cancel() } }
         }
     }
     
@@ -254,7 +281,7 @@ extension Future {
             let lock = NSRecursiveLock()
             var remaining = futures.count
             let subscriptions = futures.map { future in
-                return future.subscribe { result in
+                return future.await { result in
                     switch result {
                     case .value: resolver(result)
                     case .error:
@@ -264,7 +291,7 @@ extension Future {
                     }
                 }
             }
-            return Subscription { subscriptions.forEach { $0.cancel() } }
+            return Cancelable { subscriptions.forEach { $0.cancel() } }
         }
     }
     
@@ -285,8 +312,8 @@ extension Future {
     ///   - onValue: the closure to call in case the computation succeeds
     ///   - onError: the closure to call in case the computation fails
     /// - Returns: a subscription that can be cancelled
-    @discardableResult public func subscribe(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)? = nil) -> Subscription {
-        return subscribe { result in
+    @discardableResult public func subscribe(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)? = nil) -> Cancelable {
+        return await { result in
             switch result {
             case let .value(value): onValue?(value)
             case let .error(error): onError?(error)

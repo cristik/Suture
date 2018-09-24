@@ -14,7 +14,7 @@
 		0FC2962B212441300057B063 /* Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC2962A212441300057B063 /* Result.swift */; };
 		0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */; };
 		0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */; };
-		0FCAF7F6212D335E007DF047 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F5212D335E007DF047 /* Subscription.swift */; };
+		0FCAF7F6212D335E007DF047 /* Cancelable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F5212D335E007DF047 /* Cancelable.swift */; };
 		0FCAF7F8212D33B2007DF047 /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */; };
 		0FCAF7FC214236F4007DF047 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7FB214236F4007DF047 /* Utils.swift */; };
 		0FF6F745211CB78D007C8697 /* Future.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF6F744211CB78D007C8697 /* Future.swift */; };
@@ -41,7 +41,7 @@
 		0FC2962A212441300057B063 /* Result.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Result.swift; sourceTree = "<group>"; };
 		0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cocoa+Suture.swift"; sourceTree = "<group>"; };
 		0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjcFuture.swift; sourceTree = "<group>"; };
-		0FCAF7F5212D335E007DF047 /* Subscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subscription.swift; sourceTree = "<group>"; };
+		0FCAF7F5212D335E007DF047 /* Cancelable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cancelable.swift; sourceTree = "<group>"; };
 		0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dispatcher.swift; sourceTree = "<group>"; };
 		0FCAF7FB214236F4007DF047 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		0FF6F738211CB6E5007C8697 /* libSuture.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSuture.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -95,7 +95,7 @@
 			isa = PBXGroup;
 			children = (
 				0FC2962A212441300057B063 /* Result.swift */,
-				0FCAF7F5212D335E007DF047 /* Subscription.swift */,
+				0FCAF7F5212D335E007DF047 /* Cancelable.swift */,
 				0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */,
 				0FF6F744211CB78D007C8697 /* Future.swift */,
 				0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */,
@@ -173,15 +173,16 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0940;
-				LastUpgradeCheck = 0940;
+				LastUpgradeCheck = 1000;
 				ORGANIZATIONNAME = cristik;
 				TargetAttributes = {
 					0FF6F737211CB6E5007C8697 = {
 						CreatedOnToolsVersion = 9.4.1;
-						LastSwiftMigration = 0940;
+						LastSwiftMigration = 1000;
 					};
 					0FF6F749211CB7AC007C8697 = {
 						CreatedOnToolsVersion = 9.4.1;
+						LastSwiftMigration = 1000;
 					};
 				};
 			};
@@ -224,7 +225,7 @@
 				0FCAF7FC214236F4007DF047 /* Utils.swift in Sources */,
 				0FF6F745211CB78D007C8697 /* Future.swift in Sources */,
 				0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */,
-				0FCAF7F6212D335E007DF047 /* Subscription.swift in Sources */,
+				0FCAF7F6212D335E007DF047 /* Cancelable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,6 +307,7 @@
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				SWIFT_SWIFT3_OBJC_INFERENCE = Off;
 			};
 			name = Debug;
 		};
@@ -357,6 +359,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_SWIFT3_OBJC_INFERENCE = Off;
 			};
 			name = Release;
 		};
@@ -375,7 +379,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 3.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
@@ -393,7 +397,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 3.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};
@@ -413,7 +417,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Debug;
 		};
@@ -433,7 +437,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 4.0;
+				SWIFT_VERSION = 4.2;
 			};
 			name = Release;
 		};

@@ -30,27 +30,27 @@ final class FutureSubscribeTests: XCTestCase {
     func test_subscribe_startsWorkingOnlyOnSubscribe() {
         var executed = false
         let future = Future<Void> { _ in
-            executed = true; return Subscription()
+            executed = true; return Cancelable()
         }
         XCTAssertFalse(executed)
-        _ = future.subscribe { _ in }
+        _ = future.await { _ in }
         XCTAssertTrue(executed)
     }
     
     func test_subscribe_executesWorkerEachSubscription() {
         var executeCount = 0
         let future = Future<Void> { _ in
-            executeCount += 1; return Subscription()
+            executeCount += 1; return Cancelable()
         }
-        _ = future.subscribe { _ in }
-        _ = future.subscribe { _ in }
+        _ = future.await { _ in }
+        _ = future.await { _ in }
         XCTAssertEqual(executeCount, 2)
     }
     
     func test_cancel_cancelsChain() {
         var canceled = false
         let subscription = Future<Int> { _ in
-            return Subscription { canceled = true }
+            return Cancelable { canceled = true }
             }.mapValue { $0 * 2 }.mapError { _ in return 2 }.subscribe()
         XCTAssertFalse(canceled)
         subscription.cancel()
@@ -69,7 +69,7 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         var originalCancelled = false
         let future = Future<Int> { _ in
-            return Subscription { originalCancelled = true }
+            return Cancelable { originalCancelled = true }
         }.subscribing(on: dispatcher)
         future.subscribe().cancel()
         XCTAssertTrue(originalCancelled)
@@ -87,7 +87,7 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         var originalCancelled = false
         let future = Future<Int> { _ in
-            return Subscription { originalCancelled = true }
+            return Cancelable { originalCancelled = true }
         }.working(on: dispatcher)
         future.subscribe().cancel()
         XCTAssertTrue(originalCancelled)

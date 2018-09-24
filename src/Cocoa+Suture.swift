@@ -46,7 +46,7 @@ extension DispatchQueue {
             self.async {
                 do { try resolver(.value(computation())) } catch { resolver(.error(error)) }
             }
-            return Subscription()
+            return Cancelable()
         }
     }
 }
@@ -88,7 +88,7 @@ extension URLSession {
                 }
             }
             task.resume()
-            return Subscription { task.cancel() }
+            return Cancelable { task.cancel() }
         }
     }
     
