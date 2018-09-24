@@ -5,11 +5,27 @@
 [![License](https://img.shields.io/cocoapods/l/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
 [![Platform](https://img.shields.io/cocoapods/p/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
 
-## Example
+## Introduction
 
-To run the example project, clone the repo, and run `pod install` from the Example directory first.
+A `Future` is basically a wrapper around a computation that might or might not be asynchronous, and that can take less or more time.
 
-## Requirements
+You create a `Future` by initializing it with a closure that performs the computation, and that notifies when the computation is complete:
+
+```swift
+let future = Future<Int> { resolver in resolver(.value(19)) }
+```
+
+The above code creates a future that gets resolved with the value 19.
+
+It's important to mention that futures report `Result` instances.
+```swift
+enum Result<Value> {
+    case value(Value)
+    case error(Error)
+}
+```
+Thus failures of the future can be reported via the `error` case
+
 
 ## Installation
 
