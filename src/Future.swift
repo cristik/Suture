@@ -30,8 +30,8 @@ import Foundation
 /// Futures are created by providing them a worker closure, which receives as single argument
 /// another closure that is meant to report the error or the success.
 /// A couple of notes:
-/// - futures are lazy by default, the work will start only when `subscribe()` is called
-/// - calling `subscribe()` multiple times will result in the worked being executed multiple times,
+/// - futures are lazy by default, the work will start only when `await()/wait()` is called
+/// - calling `await()/wait()` multiple times will result in the worked being executed multiple times,
 /// if that is not desired then the `reuse()` operator can be used, which will create a new Future
 /// that caches the result of the first computation
 public final class Future<Value> {
@@ -67,7 +67,7 @@ extension Future {
     /// Creates a successful Future
     ///
     /// - Parameter value: the value to report
-    /// - Returns: a Future instance. Each subscriber will be notified with the given value
+    /// - Returns: a Future instance. Each observer will be notified with the given value
     public static func value(_ value: Value) -> Future<Value> {
         return .init { $0(.value(value)); return Cancelable() }
     }
@@ -75,7 +75,7 @@ extension Future {
     /// Creates a failed Future
     ///
     /// - Parameter error: the error to report
-    /// - Returns: a Future instance. Each subscriber will be notified with the given error
+    /// - Returns: a Future instance. Each observer will be notified with the given error
     public static func error(_ error: Error) -> Future<Value> {
         return .init { $0(.error(error)); return Cancelable() }
     }
@@ -85,7 +85,7 @@ extension Future {
     /// a compilable application, that crashes however if forgotting to actually implement
     /// that part.
     ///
-    /// - Returns: a Future instance that never notifies its subscribers
+    /// - Returns: a Future instance that never notifies its observers
     public static func placeholder() -> Future<Value> {
         assertionFailure("Not yet implemented")
         return .init { _ in return Cancelable() }
@@ -139,11 +139,11 @@ extension Future {
         }
     }
     
-    /// Creates a Future that notifies the subscribers on the given dispatcher
+    /// Creates a Future that notifies its result on the given dispatcher
     ///
     /// - Parameter dispatcher: the dispatcher to notify onto
     /// - Returns: a new Future, the callee remains unaffected
-    public func subscribing(on dispatcher: Dispatcher) -> Future<Value> {
+    public func notifying(on dispatcher: Dispatcher) -> Future<Value> {
         return .init { resolver in
             let subscription = self.await(resolver)
             return Cancelable { subscription.cancel() }
@@ -201,8 +201,8 @@ extension Future {
     }
     
     /// Creates a future that instead of calling the worker on each subscription, it holds onto the
-    /// received value and reports that for future subscribers. Until the result is provided the
-    /// subscribers accumulate
+    /// received value and reports that for future observers. Until the result is provided the
+    /// observers accumulate, and are retained
     /// Note that reused futures don't cancel the original worker
     ///
     /// - Returns: a new Future, the callee remains unaffected
@@ -210,20 +210,20 @@ extension Future {
         let lock = NSRecursiveLock()
         var started = false
         var result: Result<Value>?
-        var subscribers = [Handler]()
+        var observers = [Handler]()
         return .init { resolver in
             lock.lock(); defer { lock.unlock() }
             if let result = result {
                 resolver(result)
             } else {
-                subscribers.append(resolver)
+                observers.append(resolver)
                 if !started {
                     started = true
                     self.await { res in
                         lock.lock(); defer { lock.unlock() }
                         result = res
-                        subscribers.forEach { $0(res) }
-                        subscribers = []
+                        observers.forEach { $0(res) }
+                        observers = []
                     }
                 }
             }
@@ -232,7 +232,7 @@ extension Future {
     }
     
     /// Creates a future that gets resolved when all child futures get resolved
-    /// If any of those futures fail, the resul future is also marked as failed
+    /// If any of those futures fail, the result future is also marked as failed
     ///
     /// - Parameter futures: the array of futures to wait for
     /// - Returns: a Future
@@ -305,14 +305,14 @@ extension Future {
         return when(firstOf: [firstFuture] + otherFutures)
     }
     
-    /// Convenience subscribing that unboxes the result and allows passing two dedicated closures:
+    /// Convenience await that unboxes the result and allows passing two dedicated closures:
     /// one for success, one for failure
     ///
     /// - Parameters:
     ///   - onValue: the closure to call in case the computation succeeds
     ///   - onError: the closure to call in case the computation fails
     /// - Returns: a subscription that can be cancelled
-    @discardableResult public func subscribe(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)? = nil) -> Cancelable {
+    @discardableResult public func await(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)? = nil) -> Cancelable {
         return await { result in
             switch result {
             case let .value(value): onValue?(value)

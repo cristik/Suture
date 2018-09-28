@@ -33,7 +33,7 @@ final class FutureOperatorsTests: XCTestCase {
             executionCount += 1
             resolver(.error(FutureTestsError.first))
             return Cancelable()
-            }.retry(3).subscribe()
+            }.retry(3).await()
         XCTAssertEqual(executionCount, 3)
     }
     
@@ -41,7 +41,7 @@ final class FutureOperatorsTests: XCTestCase {
         var cancelled = false
         let subscription = Future<Int> { _ in return Cancelable { cancelled = true } }
             .retry(5)
-            .subscribe()
+            .await()
         subscription.cancel()
         XCTAssertTrue(cancelled)
     }
@@ -51,7 +51,7 @@ final class FutureOperatorsTests: XCTestCase {
         var cancellations = Array(repeatElement(false, count: 5))
         let subscription = Future<Int> { resolvers.append($0); return Cancelable { cancellations[resolvers.count-1] = true } }
             .retry(5)
-            .subscribe()
+            .await()
         resolvers[0](.error(FutureTestsError.first))
         subscription.cancel()
         XCTAssertFalse(cancellations[0])
@@ -70,9 +70,9 @@ final class FutureOperatorsTests: XCTestCase {
     func test_reuse_doesntExecuteTheWorkerMultipleTimes() {
         var count = 0
         let future = Future<Int> { count += 1; $0(.value(count)); return .init() }.keep()
-        future.subscribe()
-        future.map { $0.map { $0 * 2} }.subscribe()
-        future.subscribe()
+        future.await()
+        future.map { $0.map { $0 * 2} }.await()
+        future.await()
         XCTAssertEqual(count, 1)
     }
     
@@ -91,7 +91,7 @@ final class FutureOperatorsTests: XCTestCase {
         let future = Future<Int> { _ in started = true; return Cancelable() }
             .flatMap { .value("\($0)") }
         XCTAssertFalse(started)
-        future.subscribe()
+        future.await()
         XCTAssertTrue(started)
     }
     
@@ -123,7 +123,7 @@ final class FutureOperatorsTests: XCTestCase {
         var cancelled = false
         let subscription = Future<Int> { _ in Cancelable { cancelled = true } }
             .flatMap { .value("\($0)") }
-            .subscribe()
+            .await()
         XCTAssertFalse(cancelled)
         subscription.cancel()
         XCTAssertTrue(cancelled)

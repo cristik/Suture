@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Suture'
-  s.version          = '0.1.3'
+  s.version          = '0.2.1'
   s.summary          = 'Future support for Swift.'
 
 

@@ -51,7 +51,7 @@ final class FutureSubscribeTests: XCTestCase {
         var canceled = false
         let subscription = Future<Int> { _ in
             return Cancelable { canceled = true }
-            }.mapValue { $0 * 2 }.mapError { _ in return 2 }.subscribe()
+            }.mapValue { $0 * 2 }.mapError { _ in return 2 }.await()
         XCTAssertFalse(canceled)
         subscription.cancel()
         XCTAssertTrue(canceled)
@@ -59,9 +59,9 @@ final class FutureSubscribeTests: XCTestCase {
     
     func test_subscribing_usesTheDesiredDispatcher() {
         let dispatcher = TestDispatcher()
-        let future = Future<Int>.value(17).subscribing(on: dispatcher)
+        let future = Future<Int>.value(17).notifying(on: dispatcher)
         XCTAssertNil(dispatcher.dispatchBlock)
-        future.subscribe()
+        future.await()
         XCTAssertNotNil(dispatcher)
     }
     
@@ -70,8 +70,8 @@ final class FutureSubscribeTests: XCTestCase {
         var originalCancelled = false
         let future = Future<Int> { _ in
             return Cancelable { originalCancelled = true }
-        }.subscribing(on: dispatcher)
-        future.subscribe().cancel()
+        }.notifying(on: dispatcher)
+        future.await().cancel()
         XCTAssertTrue(originalCancelled)
     }
     
@@ -79,7 +79,7 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         let future = Future<Int>.value(17).working(on: dispatcher)
         XCTAssertNil(dispatcher.dispatchBlock)
-        future.subscribe()
+        future.await()
         XCTAssertNotNil(dispatcher)
     }
     
@@ -89,7 +89,7 @@ final class FutureSubscribeTests: XCTestCase {
         let future = Future<Int> { _ in
             return Cancelable { originalCancelled = true }
         }.working(on: dispatcher)
-        future.subscribe().cancel()
+        future.await().cancel()
         XCTAssertTrue(originalCancelled)
     }
 }
