@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,32 @@ import Foundation
 /// Futures are created by providing them a worker closure, which receives as single argument
 /// another closure that is meant to report the error or the success.
 /// A couple of notes:
-/// - futures are lazy by default, the work will start only when `await()/wait()` is called
-/// - calling `await()/wait()` multiple times will result in the worked being executed multiple times,
+/// - futures are lazy by default, the work will start only when `get()` is called
+/// - calling `get()` multiple times will result in the worked being executed multiple times,
 /// if that is not desired then the `reuse()` operator can be used, which will create a new Future
 /// that caches the result of the first computation
-public final class Future<Value> {
+public final class Future<Success, Failure: Error> {
     /// Susbcriber
-    public typealias Handler = (Result<Value>) -> Void
+    public typealias Handler = (Result<Success, Failure>) -> Void
     
     /// Resolver
-    public typealias Resolver = (Result<Value>) -> Void
+    public typealias Resolver = (@escaping (Result<Success, Failure>) -> Void) -> Cancelable
     
-    /// Worker
-    public typealias Worker = (@escaping Resolver) -> Cancelable
-    
-    fileprivate let worker: Worker
+    private let resolver: Resolver
     
     /// Creates a Future that uses the given worker as resolver for the future value
     ///
     /// - Parameter worker: a closure that computes and reports the Future result
-    public required init(_ worker: @escaping Worker) {
-        self.worker = worker
+    public required init(_ resolver: @escaping Resolver) {
+        self.resolver = resolver
     }
     
     /// Registers a callback to be executed when the Future gets a result
     ///
     /// - Parameter handler: the closure to execute on completion
     /// - Returns: a Subscription that can be cancelled
-    @discardableResult public func await(_ handler: @escaping Handler) -> Cancelable {
-        return worker(handler)
+    @discardableResult public func get(_ handler: @escaping Handler) -> Cancelable {
+        return resolver(handler)
     }
 }
 
@@ -68,16 +65,16 @@ extension Future {
     ///
     /// - Parameter value: the value to report
     /// - Returns: a Future instance. Each observer will be notified with the given value
-    public static func value(_ value: Value) -> Future<Value> {
-        return .init { $0(.value(value)); return Cancelable() }
+    public static func success(_ success: Success) -> Future {
+        return .init { $0(.success(success)); return Cancelable() }
     }
     
     /// Creates a failed Future
     ///
     /// - Parameter error: the error to report
     /// - Returns: a Future instance. Each observer will be notified with the given error
-    public static func error(_ error: Error) -> Future<Value> {
-        return .init { $0(.error(error)); return Cancelable() }
+    public static func failure(_ failure: Failure) -> Future {
+        return .init { $0(.failure(failure)); return Cancelable() }
     }
     
     /// Creates a future that never resolves, but throws an assertion in Debug builds
@@ -86,50 +83,23 @@ extension Future {
     /// that part.
     ///
     /// - Returns: a Future instance that never notifies its observers
-    public static func placeholder() -> Future<Value> {
+    public static func placeholder() -> Future {
         assertionFailure("Not yet implemented")
         return .init { _ in return Cancelable() }
-    }
-    
-    /// Synchronously waits until the Future gets a result
-    ///
-    /// - Returns: the Future result
-    @discardableResult public func wait() -> Result<Value> {
-        let semaphore = DispatchSemaphore(value: 0)
-        var result: Result<Value>!
-        await { result = $0; semaphore.signal() }
-        semaphore.wait()
-        return result
-    }
-    
-    /// Synchronously waits until either the Future gets a result or the timeout ellapses
-    ///
-    /// - Parameter timeout: the time to wait
-    /// - Parameter timeoutError: the error to report in case of failure
-    /// - Returns: the Future result
-    @discardableResult public func wait(for timeout: TimeInterval, timeoutError: Error) -> Result<Value> {
-        let semaphore = DispatchSemaphore(value: 0)
-        var result: Result<Value>!
-        await { result = $0; semaphore.signal() }
-        if semaphore.wait(timeout: .now() + timeout) == .success {
-            return result
-        } else {
-            return .error(timeoutError)
-        }
     }
     
     /// Creates a Future that sends the worker closure on the given dispatcher
     ///
     /// - Parameter dispatcher: the dispatcher to perform the computation
     /// - Returns: a new Future, the callee remains unaffected
-    public func working(on dispatcher: Dispatcher) -> Future<Value> {
+    public func working(on dispatcher: Dispatcher) -> Future<Success, Failure> {
         return .init { resolver in
             var subscription: Cancelable?
             var canceled = false
             dispatcher.dispatch {
                 // TODO: can there occur race condition on the assign?
                 if !canceled {
-                    subscription = self.worker(resolver)
+                    subscription = self.resolver(resolver)
                 }
             }
             return Cancelable {
@@ -143,9 +113,9 @@ extension Future {
     ///
     /// - Parameter dispatcher: the dispatcher to notify onto
     /// - Returns: a new Future, the callee remains unaffected
-    public func notifying(on dispatcher: Dispatcher) -> Future<Value> {
+    public func notifying(on dispatcher: Dispatcher) -> Future<Success, Failure> {
         return .init { resolver in
-            let subscription = self.await(resolver)
+            let subscription = self.get(resolver)
             return Cancelable { subscription.cancel() }
         }
     }
@@ -154,9 +124,9 @@ extension Future {
     ///
     /// - Parameter transform: the transform to apply on the result
     /// - Returns: a new Future, the callee remains unaffected
-    public func map<T>(_ transform: @escaping (Result<Value>) -> Result<T>) -> Future<T> {
+    public func map<NewSuccess>(_ transform: @escaping (Result<Success, Failure>) -> Result<NewSuccess, Failure>) -> Future<NewSuccess, Failure> {
         return .init { resolver in
-            let subscription = self.await { resolver(transform($0)) }
+            let subscription = self.get { resolver(transform($0)) }
             return Cancelable { subscription.cancel() }
         }
     }
@@ -166,11 +136,11 @@ extension Future {
     /// - Parameter transform: a closure that receives the calles result and creates the Future that will
     ///   provide the final result
     /// - Returns: a new Future, the callee remains unaffected
-    public func flatMap<T>(_ transform: @escaping (Result<Value>) -> Future<T>) -> Future<T> {
+    public func flatMap<NewSuccess>(_ transform: @escaping (Result<Success, Failure>) -> Future<NewSuccess, Failure>) -> Future<NewSuccess, Failure> {
         return .init { resolver in
             var innerSubscription = Cancelable?.none
-            let subscription = self.await { result in
-                innerSubscription = transform(result).await(resolver)
+            let subscription = self.get { result in
+                innerSubscription = transform(result).get(resolver)
             }
             return Cancelable { subscription.cancel(); innerSubscription?.cancel() }
         }
@@ -181,21 +151,21 @@ extension Future {
     ///
     /// - Parameter times: the maximum number of times to retry before giving up and reporting the last error
     /// - Returns: a new Future, the callee remains unaffected
-    public func retry(_ times: Int) -> Future<Value> {
+    public func retry(_ times: Int) -> Future<Success, Failure> {
         return .init { resolver in
             var remaining = times - 1
             var handler: Handler!
             var subscription: Cancelable!
             handler = { result in
                 switch result {
-                case .value,
-                     .error where remaining <= 0: resolver(result)
-                case .error:
+                case .success,
+                     .failure where remaining <= 0: resolver(result)
+                case .failure:
                     remaining -= 1
-                    subscription = self.await(handler)
+                    subscription = self.get(handler)
                 }
             }
-            subscription = self.await(handler)
+            subscription = self.get(handler)
             return Cancelable { subscription.cancel() }
         }
     }
@@ -206,10 +176,10 @@ extension Future {
     /// Note that reused futures don't cancel the original worker
     ///
     /// - Returns: a new Future, the callee remains unaffected
-    public func keep() -> Future<Value> {
+    public func keep() -> Future<Success, Failure> {
         let lock = NSRecursiveLock()
         var started = false
-        var result: Result<Value>?
+        var result: Result<Success, Failure>?
         var observers = [Handler]()
         return .init { resolver in
             lock.lock(); defer { lock.unlock() }
@@ -219,7 +189,7 @@ extension Future {
                 observers.append(resolver)
                 if !started {
                     started = true
-                    self.await { res in
+                    self.get { res in
                         lock.lock(); defer { lock.unlock() }
                         result = res
                         observers.forEach { $0(res) }
@@ -236,23 +206,23 @@ extension Future {
     ///
     /// - Parameter futures: the array of futures to wait for
     /// - Returns: a Future
-    public static func when(all futures: [Future]) -> Future<[Value]> {
-        guard !futures.isEmpty else { return .value([]) }
+    public static func when(all futures: [Future]) -> Future<[Success], Failure> {
+        guard !futures.isEmpty else { return .success([]) }
         
         return .init { resolver in
             let lock = NSRecursiveLock()
-            var values = Array(repeating: Value?.none, count: futures.count)
+            var values = Array(repeating: Success?.none, count: futures.count)
             let subscriptions: [Cancelable] = futures.enumerated().map {
                 let (index, future) = $0
-                return future.await { result in
+                return future.get { result in
                     switch result {
-                    case let .value(value):
+                    case let .success(success):
                         lock.lock(); defer { lock.unlock() }
-                        values[index] = value
+                        values[index] = success
                         if !values.contains(where: { $0 == nil}) {
-                            resolver(.value(values.compactMap { $0 }))
+                            resolver(.success(values.compactMap { $0 }))
                         }
-                    case let .error(error): resolver(.error(error))
+                    case let .failure(failure): resolver(.failure(failure))
                     }
                 }
             }
@@ -266,7 +236,7 @@ extension Future {
     /// - Parameter firstFuture: the first future from the list
     /// - Parameter otherFutures: the rest of the array
     /// - Returns: a Future
-    public static func when(all firstFuture: Future, _ otherFutures: Future...) -> Future<[Value]> {
+    public static func when(all firstFuture: Future, _ otherFutures: Future...) -> Future<[Success], Failure> {
         return when(all: [firstFuture] + otherFutures)
     }
     
@@ -281,10 +251,10 @@ extension Future {
             let lock = NSRecursiveLock()
             var remaining = futures.count
             let subscriptions = futures.map { future in
-                return future.await { result in
+                return future.get { result in
                     switch result {
-                    case .value: resolver(result)
-                    case .error:
+                    case .success: resolver(result)
+                    case .failure:
                         lock.lock(); defer { lock.unlock() }
                         if remaining == 0 { resolver(result) }
                         else { remaining -= 1 }
@@ -305,18 +275,18 @@ extension Future {
         return when(firstOf: [firstFuture] + otherFutures)
     }
     
-    /// Convenience await that unboxes the result and allows passing two dedicated closures:
+    /// Convenience `get` that unboxes the result and allows passing two dedicated closures:
     /// one for success, one for failure
     ///
     /// - Parameters:
-    ///   - onValue: the closure to call in case the computation succeeds
-    ///   - onError: the closure to call in case the computation fails
+    ///   - onSuccess: the closure to call in case the computation succeeds
+    ///   - onFailure: the closure to call in case the computation fails
     /// - Returns: a subscription that can be cancelled
-    @discardableResult public func await(onValue: ((Value) -> Void)? = nil, onError: ((Error) -> Void)? = nil) -> Cancelable {
-        return await { result in
+    @discardableResult public func get(onSuccess: ((Success) -> Void)? = nil, onFailure: ((Failure) -> Void)? = nil) -> Cancelable {
+        return get { result in
             switch result {
-            case let .value(value): onValue?(value)
-            case let .error(error): onError?(error)
+            case let .success(success): onSuccess?(success)
+            case let .failure(failure): onFailure?(failure)
             }
         }
     }
@@ -326,15 +296,11 @@ extension Future {
     ///
     /// - Parameter transform: the transform to apply on the succesful value
     /// - Returns: a new Future, the callee remains unaffected
-    public func mapValue<T>(_ transform: @escaping (Value) throws -> T) -> Future<T> {
+    public func mapSuccess<NewSuccess>(_ transform: @escaping (Success) -> NewSuccess) -> Future<NewSuccess, Failure> {
         return map { result in
-            do {
-                switch result {
-                case let .value(value): return try .value(transform(value))
-                case let .error(error): throw error
-                }
-            } catch {
-                return .error(error)
+            switch result {
+            case let .success(success): return .success(transform(success))
+            case let .failure(failure): return .failure(failure)
             }
         }
     }
@@ -343,15 +309,11 @@ extension Future {
     ///
     /// - Parameter transform: the transform to apply on the received error
     /// - Returns: a new Future, the callee remains unaffected
-    public func mapError(_ transform: @escaping (Error) throws -> Value) -> Future<Value> {
+    public func mapFailure(_ transform: @escaping (Failure) throws -> Success) -> Future<Success, Failure> {
         return map { result in
-            do {
-                switch result {
-                case let .value(value): return .value(value)
-                case let .error(error): return try .value(transform(error))
-                }
-            } catch {
-                return .error(error)
+            switch result {
+            case let .success(success): return .success(success)
+            case let .failure(failure): return .failure(failure)
             }
         }
     }
@@ -360,15 +322,11 @@ extension Future {
     ///
     /// - Parameter transform: the transform to apply on the succesful value
     /// - Returns: a new Future, the callee remains unaffected
-    public func flatMapValue<T>(_ transform: @escaping (Value) throws -> Future<T>) -> Future<T> {
+    public func flatMapSuccess<NewSuccess>(_ transform: @escaping (Success) -> Future<NewSuccess, Failure>) -> Future<NewSuccess, Failure> {
         return flatMap { result in
-            do {
-                switch result {
-                case let .value(value): return try transform(value)
-                case let .error(error): throw error
-                }
-            } catch {
-                return .error(error)
+            switch result {
+            case let .success(success): return transform(success)
+            case let .failure(failure): return .failure(failure)
             }
         }
     }
@@ -377,15 +335,11 @@ extension Future {
     ///
     /// - Parameter transform: the transform to apply on the received error
     /// - Returns: a new Future, the callee remains unaffected
-    public func flatMapError(_ transform: @escaping (Error) throws -> Future<Value>) -> Future<Value> {
+    public func flatMapFailure(_ transform: @escaping (Failure) -> Future) -> Future<Success, Failure> {
         return flatMap { result in
-            do {
-                switch result {
-                case let .value(value): return .value(value)
-                case let .error(error): return try transform(error)
-                }
-            } catch {
-                return .error(error)
+            switch result {
+            case let .success(success): return .success(success)
+            case let .failure(failure): return transform(failure)
             }
         }
     }

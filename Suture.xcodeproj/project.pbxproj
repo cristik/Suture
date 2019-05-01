@@ -11,7 +11,6 @@
 		0FAEBCCB214A1CC00053DB61 /* Common.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCCA214A1CC00053DB61 /* Common.swift */; };
 		0FAEBCCD214A1D180053DB61 /* Future+Operators-Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCCC214A1D180053DB61 /* Future+Operators-Tests.swift */; };
 		0FAEBCCF214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCCE214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift */; };
-		0FC2962B212441300057B063 /* Result.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC2962A212441300057B063 /* Result.swift */; };
 		0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */; };
 		0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */; };
 		0FCAF7F6212D335E007DF047 /* Cancelable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F5212D335E007DF047 /* Cancelable.swift */; };
@@ -39,7 +38,6 @@
 		0FAEBCCA214A1CC00053DB61 /* Common.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Common.swift; sourceTree = "<group>"; };
 		0FAEBCCC214A1D180053DB61 /* Future+Operators-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Operators-Tests.swift"; sourceTree = "<group>"; };
 		0FAEBCCE214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cocoa+Suture-Tests.swift"; sourceTree = "<group>"; };
-		0FC2962A212441300057B063 /* Result.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Result.swift; sourceTree = "<group>"; };
 		0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cocoa+Suture.swift"; sourceTree = "<group>"; };
 		0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjcFuture.swift; sourceTree = "<group>"; };
 		0FCAF7F5212D335E007DF047 /* Cancelable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cancelable.swift; sourceTree = "<group>"; };
@@ -96,7 +94,6 @@
 		0FF6F73A211CB6E5007C8697 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				0FC2962A212441300057B063 /* Result.swift */,
 				0FCAF7F5212D335E007DF047 /* Cancelable.swift */,
 				0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */,
 				0FF6F744211CB78D007C8697 /* Future.swift */,
@@ -180,7 +177,7 @@
 				TargetAttributes = {
 					0FF6F737211CB6E5007C8697 = {
 						CreatedOnToolsVersion = 9.4.1;
-						LastSwiftMigration = 1000;
+						LastSwiftMigration = 1020;
 					};
 					0FF6F749211CB7AC007C8697 = {
 						CreatedOnToolsVersion = 9.4.1;
@@ -194,6 +191,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 0FF6F72F211CB6E5007C8697;
 			productRefGroup = 0FF6F739211CB6E5007C8697 /* Products */;
@@ -222,7 +220,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */,
-				0FC2962B212441300057B063 /* Result.swift in Sources */,
 				0FCAF7F8212D33B2007DF047 /* Dispatcher.swift in Sources */,
 				0FCAF7FC214236F4007DF047 /* Utils.swift in Sources */,
 				0FF6F745211CB78D007C8697 /* Future.swift in Sources */,
@@ -383,6 +380,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -400,6 +398,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -419,6 +418,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -438,6 +438,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};

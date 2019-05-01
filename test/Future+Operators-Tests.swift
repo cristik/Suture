@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,30 +29,30 @@ import XCTest
 final class FutureOperatorsTests: XCTestCase {
     func test_retrying_executesWorkerTheSpecifiedAmountOfTimes() {
         var executionCount = 0
-        Future<Int> { resolver in
+        Future<Int, FutureTestsError> { resolver in
             executionCount += 1
-            resolver(.error(FutureTestsError.first))
+            resolver(.failure(.first))
             return Cancelable()
-            }.retry(3).await()
+            }.retry(3).get()
         XCTAssertEqual(executionCount, 3)
     }
     
     func test_retry_cancelsTheFirstAttemptIfNotStarted() {
         var cancelled = false
-        let subscription = Future<Int> { _ in return Cancelable { cancelled = true } }
+        let subscription = Future<Int, FutureTestsError> { _ in return Cancelable { cancelled = true } }
             .retry(5)
-            .await()
+            .get()
         subscription.cancel()
         XCTAssertTrue(cancelled)
     }
     
     func test_retry_cancelsTheSecondAttemptIfTheFirstFailed() {
-        var resolvers = [Future<Int>.Resolver]()
+        var resolvers = [Future<Int, FutureTestsError>.Handler]()
         var cancellations = Array(repeatElement(false, count: 5))
-        let subscription = Future<Int> { resolvers.append($0); return Cancelable { cancellations[resolvers.count-1] = true } }
+        let subscription = Future<Int, FutureTestsError> { resolvers.append($0); return Cancelable { cancellations[resolvers.count-1] = true } }
             .retry(5)
-            .await()
-        resolvers[0](.error(FutureTestsError.first))
+            .get()
+        resolvers[0](.failure(.first))
         subscription.cancel()
         XCTAssertFalse(cancellations[0])
         XCTAssertTrue(cancellations[1])
@@ -60,70 +60,70 @@ final class FutureOperatorsTests: XCTestCase {
     }
     
     func test_map_reportsValue_onSuccess() {
-        var result: String?
-        Future.value(2).mapValue     { String($0) }.await {
-            result = $0.value
+        var result: Result<String, FutureTestsError>?
+        Future.success(2).mapSuccess { String($0) }.get {
+            result = $0
         }
-        XCTAssertEqual(result, "2")
+        XCTAssertEqual(result, .success("2"))
     }
     
     func test_reuse_doesntExecuteTheWorkerMultipleTimes() {
         var count = 0
-        let future = Future<Int> { count += 1; $0(.value(count)); return .init() }.keep()
-        future.await()
-        future.map { $0.map { $0 * 2} }.await()
-        future.await()
+        let future = Future<Int, FutureTestsError> { count += 1; $0(.success(count)); return .init() }.keep()
+        future.get()
+        future.map { $0.map { $0 * 2} }.get()
+        future.get()
         XCTAssertEqual(count, 1)
     }
     
     func test_reuse_returnsTheValueOfTheFirstComputation() {
         var count = 0
-        var results = [Int?]()
-        let future = Future<Int> { count += 1; $0(.value(count)); return .init() }.keep()
-        future.await { results.append($0.value) }
-        future.map { $0.map { $0 * 2} }.await { results.append($0.value) }
-        future.await { results.append($0.value) }
-        XCTAssertEqual(results, [.some(1), .some(2), .some(1)])
+        var results = [Result<Int, FutureTestsError>]()
+        let future = Future<Int, FutureTestsError> { count += 1; $0(.success(count)); return .init() }.keep()
+        future.get { results.append($0) }
+        future.mapSuccess { $0 }.get { results.append($0) }
+        future.get { results.append($0) }
+        XCTAssertEqual(results, [.success(1), .success(1), .success(1)])
     }
     
     func test_flatMap_doesntStartTheChainIfNotSubscribed() {
         var started = false
-        let future = Future<Int> { _ in started = true; return Cancelable() }
-            .flatMap { .value("\($0)") }
+        let future = Future<Int, FutureTestsError> { _ in started = true; return Cancelable() }
+            .flatMap { .success("\($0)") }
         XCTAssertFalse(started)
-        future.await()
+        future.get()
         XCTAssertTrue(started)
     }
     
     func test_flatMap_recoversIfOriginalFails() {
-        var value: String?
-        Future<Int>.error(FutureTestsError.first)
-            .flatMap { _ in .value("12") }
-            .await { value = $0.value }
-        XCTAssertEqual(value, "12")
+        var value: Result<String, FutureTestsError>?
+        Future<Int, FutureTestsError>.failure(.first)
+            .flatMap { _ in .success("12") }
+            .get { value = $0 }
+        XCTAssertEqual(value, .success("12"))
     }
     
     func test_flatMap_failsIfSecondFails() {
-        var error: FutureTestsError?
-        Future<Int>.value(97)
-            .flatMap { _ in Future<String>.error(FutureTestsError.second) }
-            .await { error = $0.error as? FutureTestsError }
-        XCTAssertEqual(error, .second)
+        var error: Result<String, FutureTestsError>?
+        Future<Int, FutureTestsError>.success(97)
+            .flatMap { _ in Future<String, FutureTestsError>.failure(.second) }
+            .get { error = $0 }
+        XCTAssertEqual(error, .failure(.second))
     }
     
     func test_flatMap_reportSecondsValue() {
-        var value: String?
-        Future<Int>.value(99)
-            .flatMap { .value("\($0.value!)") }
-            .await { value = $0.value }
-        XCTAssertEqual(value, "99")
+        var value: Result<String, FutureTestsError>?
+        Future<Int, FutureTestsError>.success(99)
+            .flatMapSuccess { .success("\($0)") }
+            .get { value = $0 }
+        XCTAssertEqual(value, .success("99"))
     }
     
     func test_flatMap_cancelsTheOriginal() {
         var cancelled = false
-        let subscription = Future<Int> { _ in Cancelable { cancelled = true } }
-            .flatMap { .value("\($0)") }
-            .await()
+        let subscription = Future<Int, FutureTestsError> { _ in Cancelable { cancelled = true } }
+            .flatMap { .success("\($0)") }
+            .get()
         XCTAssertFalse(cancelled)
         subscription.cancel()
         XCTAssertTrue(cancelled)

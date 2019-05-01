@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,80 +41,12 @@ extension DispatchQueue {
     ///
     /// - Parameter block: the computation to execute async
     /// - Returns: a Future
-    public func asyncFuture<T>(_ computation: @escaping () throws -> T) -> Future<T> {
+    public func asyncFuture<T>(_ computation: @escaping () throws -> T) -> Future<T, Error> {
         return .init { resolver in
             self.async {
-                do { try resolver(.value(computation())) } catch { resolver(.error(error)) }
+                do { try resolver(.success(computation())) } catch { resolver(.failure(error)) }
             }
             return Cancelable()
         }
-    }
-}
-
-public struct SUHTTPResponse<T> {
-    public let response: HTTPURLResponse
-    public let data: T
-}
-
-extension URLSession {
-    /// Creates a Future whose worker sends an HTTP GET request to the given URL.
-    /// In case of success the Future reports a tuple containing the response and the data
-    ///
-    /// - Parameter url: the url to query
-    /// - Returns: a Future
-    public func httpData(from url: URL) -> Future<SUHTTPResponse<Data>> {
-        return httpData(for: URLRequest(url: url))
-    }
-    
-    /// Creates a Future whose worker sends an HTTP request to the given URLRequest.
-    /// In case of success the Future reports a tuple containing the response and the data
-    ///
-    /// - Parameter url: the url request to send
-    /// - Returns: a Future
-    public func httpData(for request: URLRequest) -> Future<SUHTTPResponse<Data>> {
-        return .init { resolver in
-            let task = self.dataTask(with: request) { data, response, error in
-                if let error = error {
-                    resolver(.error(error))
-                } else {
-                    // FIXME: forced unwraps, hower a request should always have a url, and the initializer
-                    // should always succeed, right?
-                    let response = response as? HTTPURLResponse ?? HTTPURLResponse(url: request.url!,
-                                                                                   statusCode: 0,
-                                                                                   httpVersion: nil,
-                                                                                   headerFields: nil)!
-                    let data = data ?? Data()
-                    resolver(.value(.init(response: response, data: data)))
-                }
-            }
-            task.resume()
-            return Cancelable { task.cancel() }
-        }
-    }
-    
-    /// Convenience method for sending a GET request and receive a decoded JSON
-    /// In case the request fails or a decoding error occurs, the Future is marked as failed
-    ///
-    /// - Parameters:
-    ///   - url: the URL to query
-    ///   - type: the type to decode
-    ///   - decoder: a JSONDecoder to use, by default a simple instance is created
-    /// - Returns: a Future that gets resolved with a tupe made of the http response,
-    /// and the decoded object
-    public func httpObject<T: Decodable>(from url: URL, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<SUHTTPResponse<T>> {
-        return httpObject(for: URLRequest(url: url), ofType: type, decoder: decoder)
-    }
-    
-    /// Convenience method for sending a HTTP request and receive a decoded JSON
-    /// In case the request fails or a decoding error occurs, the Future is marked as failed
-    ///
-    /// - Parameters:
-    ///   - url: the URLRequest to send
-    ///   - type: the type to decode
-    ///   - decoder: a JSONDecoder to use, by default a simple instance is created
-    /// - Returns: a Future that gets resolved with a tupe made of the http response,
-    /// and the decoded object
-    public func httpObject<T: Decodable>(for request: URLRequest, ofType type: T.Type = T.self, decoder: JSONDecoder = JSONDecoder()) -> Future<SUHTTPResponse<T>> {
-        return httpData(for: request).mapValue { try .init(response: $0.response, data: decoder.decode(type, from: $0.data)) }
     }
 }

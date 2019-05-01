@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Suture'
-  s.version          = '0.2.2'
+  s.version          = '0.3.0'
   s.summary          = 'Future support for Swift.'
 
 
@@ -16,7 +16,7 @@ This library adds future support for Swift.
   s.platform = :osx, :ios
   s.osx.deployment_target = "10.10"
   s.ios.deployment_target = "9.0"
-  s.swift_version = "4.2"
+  s.swift_version = "5.0"
 
   s.source_files = 'src/*.swift'
 end

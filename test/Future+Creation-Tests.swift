@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,21 +30,21 @@ final class FutureCreationTests: XCTestCase {
     
     func test_init_doesntStartWorkRightAway() {
         var executed = false
-        _ = Future<Void> { _ in
+        _ = Future<Void, FutureTestsError> { _ in
             executed = true; return Cancelable()
         }
         XCTAssertFalse(executed)
     }
     
     func test_value_reportsSuccess() {
-        var result = Result<String>?.none
-        Future<String>.value("abc").await { result = $0 }
-        XCTAssertEqual(result?.value, "abc")
+        var result = Result<String, FutureTestsError>?.none
+        Future<String, FutureTestsError>.success("abc").get { result = $0 }
+        XCTAssertEqual(try? result?.get(), "abc")
     }
     
     func test_error_reportsError() {
-        var result = Result<String>?.none
-        Future<String>.error(FutureTestsError.second).await { result = $0 }
-        XCTAssertEqual(result?.error as? FutureTestsError, .second)
+        var result = Result<String, FutureTestsError>?.none
+        Future<String, FutureTestsError>.failure(.second).get { result = $0 }
+        XCTAssertEqual(result, .failure(.second))
     }
 }

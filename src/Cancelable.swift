@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -25,20 +25,19 @@
 
 import Foundation
 
-/// A Cancelable is obtained after calling `await` on a Future. It allows cancellation,
+/// A Cancelable is obtained after calling `get` on a Future. It allows cancellation,
 /// and if the worker used to create the Future supports cancellation
 /// then the cancellation will be forwarded there. Regardless of the worker behaviour
-/// the closure passed to `await` will not be executed if the subscription is cancelled.
+/// the closure passed to `get` will not be executed if the subscription is cancelled.
 @objc(SUCancelable) @objcMembers public class Cancelable: NSObject {
-    private var isCanceled = false
-    private var cancelAction: (() -> Void)?
+    private var onCancel: (() -> Void)?
     
-    public init(_ cancelAction:  (() -> Void)? = nil) {
-        self.cancelAction = cancelAction
+    public init(_ onCancel:  (() -> Void)? = nil) {
+        self.onCancel = onCancel
     }
     
     /// Marks the subscription as cancelled 
     public func cancel() {
-        synchronized(self) { isCanceled = true; cancelAction?(); cancelAction = nil }
+        synchronized(self) { onCancel?(); onCancel = nil }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@ final class CocoaSutureTests: XCTestCase {
     func test_asyncFuture_dispatchesAsyncAndReports() {
         var value: String?
         let exp = expectation(description: #function)
-        DispatchQueue.main.asyncFuture { return "15" }.await { value = $0.value; exp.fulfill() }
+        DispatchQueue.main.asyncFuture { return "15" }.get { value = try? $0.get(); exp.fulfill() }
         waitForExpectations(timeout: 0.0001)
         XCTAssertEqual(value, "15")
     }

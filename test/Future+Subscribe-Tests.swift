@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Cristian Kocza
+// Copyright (c) 2018-2019, Cristian Kocza
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,29 +29,29 @@ import XCTest
 final class FutureSubscribeTests: XCTestCase {
     func test_subscribe_startsWorkingOnlyOnSubscribe() {
         var executed = false
-        let future = Future<Void> { _ in
+        let future = Future<Void, FutureTestsError> { _ in
             executed = true; return Cancelable()
         }
         XCTAssertFalse(executed)
-        _ = future.await { _ in }
+        _ = future.get { _ in }
         XCTAssertTrue(executed)
     }
     
     func test_subscribe_executesWorkerEachSubscription() {
         var executeCount = 0
-        let future = Future<Void> { _ in
+        let future = Future<Void, FutureTestsError> { _ in
             executeCount += 1; return Cancelable()
         }
-        _ = future.await { _ in }
-        _ = future.await { _ in }
+        _ = future.get { _ in }
+        _ = future.get { _ in }
         XCTAssertEqual(executeCount, 2)
     }
     
     func test_cancel_cancelsChain() {
         var canceled = false
-        let subscription = Future<Int> { _ in
+        let subscription = Future<Int, FutureTestsError> { _ in
             return Cancelable { canceled = true }
-            }.mapValue { $0 * 2 }.mapError { _ in return 2 }.await()
+            }.mapSuccess { $0 * 2 }.mapFailure { _ in return 2 }.get()
         XCTAssertFalse(canceled)
         subscription.cancel()
         XCTAssertTrue(canceled)
@@ -59,37 +59,37 @@ final class FutureSubscribeTests: XCTestCase {
     
     func test_subscribing_usesTheDesiredDispatcher() {
         let dispatcher = TestDispatcher()
-        let future = Future<Int>.value(17).notifying(on: dispatcher)
+        let future = Future<Int, FutureTestsError>.success(17).notifying(on: dispatcher)
         XCTAssertNil(dispatcher.dispatchBlock)
-        future.await()
+        future.get()
         XCTAssertNotNil(dispatcher)
     }
     
     func test_subscribingOn_cancelsTheOriginalFuture() {
         let dispatcher = TestDispatcher()
         var originalCancelled = false
-        let future = Future<Int> { _ in
+        let future = Future<Int, FutureTestsError> { _ in
             return Cancelable { originalCancelled = true }
         }.notifying(on: dispatcher)
-        future.await().cancel()
+        future.get().cancel()
         XCTAssertTrue(originalCancelled)
     }
     
     func test_workingOn_executesWorkerOnTheGivenDispatcher() {
         let dispatcher = TestDispatcher()
-        let future = Future<Int>.value(17).working(on: dispatcher)
+        let future = Future<Int, FutureTestsError>.success(17).working(on: dispatcher)
         XCTAssertNil(dispatcher.dispatchBlock)
-        future.await()
+        future.get()
         XCTAssertNotNil(dispatcher)
     }
     
     func test_workingOn_cancelsTheOriginalFuture() {
         let dispatcher = TestDispatcher()
         var originalCancelled = false
-        let future = Future<Int> { _ in
+        let future = Future<Int, FutureTestsError> { _ in
             return Cancelable { originalCancelled = true }
         }.working(on: dispatcher)
-        future.await().cancel()
+        future.get().cancel()
         XCTAssertTrue(originalCancelled)
     }
 }
