@@ -25,6 +25,7 @@
 
 import Foundation
 
+@available(iOS, obsoleted: 13.0)
 extension DispatchQueue: Dispatcher {
     /// A dispatch queue will conform to `Dispatcher` by asynchronously dispatching
     /// the block
@@ -32,21 +33,5 @@ extension DispatchQueue: Dispatcher {
     /// - Parameter block: the block to execute async
     public func dispatch(_ block: @escaping () -> Void) {
         async(execute: block)
-    }
-}
-
-extension DispatchQueue {
-    /// Dispatches async the given computation and creates a Future that gets resolved
-    /// with the value returned by the closure, or gets rejected with the thrown error
-    ///
-    /// - Parameter block: the computation to execute async
-    /// - Returns: a Future
-    public func asyncFuture<T>(_ computation: @escaping () throws -> T) -> Future<T, Error> {
-        return .init { resolver in
-            self.async {
-                do { try resolver(.success(computation())) } catch { resolver(.failure(error)) }
-            }
-            return Cancelable()
-        }
     }
 }

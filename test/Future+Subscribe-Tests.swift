@@ -30,28 +30,28 @@ final class FutureSubscribeTests: XCTestCase {
     func test_subscribe_startsWorkingOnlyOnSubscribe() {
         var executed = false
         let future = Future<Void, FutureTestsError> { _ in
-            executed = true; return Cancelable()
+            executed = true; return Subscription()
         }
         XCTAssertFalse(executed)
-        _ = future.get { _ in }
+        _ = future.subscribe { _ in }
         XCTAssertTrue(executed)
     }
     
     func test_subscribe_executesWorkerEachSubscription() {
         var executeCount = 0
         let future = Future<Void, FutureTestsError> { _ in
-            executeCount += 1; return Cancelable()
+            executeCount += 1; return Subscription()
         }
-        _ = future.get { _ in }
-        _ = future.get { _ in }
+        _ = future.subscribe { _ in }
+        _ = future.subscribe { _ in }
         XCTAssertEqual(executeCount, 2)
     }
     
     func test_cancel_cancelsChain() {
         var canceled = false
         let subscription = Future<Int, FutureTestsError> { _ in
-            return Cancelable { canceled = true }
-            }.mapSuccess { $0 * 2 }.mapFailure { _ in return 2 }.get()
+            return Subscription { canceled = true }
+            }.map { $0 * 2 }.mapFailure { _ in return 2 }.subscribe()
         XCTAssertFalse(canceled)
         subscription.cancel()
         XCTAssertTrue(canceled)
@@ -61,7 +61,7 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         let future = Future<Int, FutureTestsError>.success(17).notifying(on: dispatcher)
         XCTAssertNil(dispatcher.dispatchBlock)
-        future.get()
+        future.subscribe()
         XCTAssertNotNil(dispatcher)
     }
     
@@ -69,9 +69,9 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         var originalCancelled = false
         let future = Future<Int, FutureTestsError> { _ in
-            return Cancelable { originalCancelled = true }
+            return Subscription { originalCancelled = true }
         }.notifying(on: dispatcher)
-        future.get().cancel()
+        future.subscribe().cancel()
         XCTAssertTrue(originalCancelled)
     }
     
@@ -79,7 +79,7 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         let future = Future<Int, FutureTestsError>.success(17).working(on: dispatcher)
         XCTAssertNil(dispatcher.dispatchBlock)
-        future.get()
+        future.subscribe()
         XCTAssertNotNil(dispatcher)
     }
     
@@ -87,9 +87,9 @@ final class FutureSubscribeTests: XCTestCase {
         let dispatcher = TestDispatcher()
         var originalCancelled = false
         let future = Future<Int, FutureTestsError> { _ in
-            return Cancelable { originalCancelled = true }
+            return Subscription { originalCancelled = true }
         }.working(on: dispatcher)
-        future.get().cancel()
+        future.subscribe().cancel()
         XCTAssertTrue(originalCancelled)
     }
 }

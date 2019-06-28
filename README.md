@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/cocoapods/l/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
 [![Platform](https://img.shields.io/cocoapods/p/Suture.svg?style=flat)](https://cocoapods.org/pods/Suture)
 
-### **Important** The current version of `Suture` works on Swift 5.0 nd above, only. For Swift 4.x please use vesion 0.2.2
+### **Important** The current version of `Suture` works on Swift 5.1 and above, only. For Swift 5.0 please use version  0.3.0. For Swift 4.x please use vesion 0.2.2
 
 ## Introduction
 

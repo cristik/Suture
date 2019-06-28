@@ -65,18 +65,18 @@ import Foundation
 /// on the Swift side. Currently there is no support for creating or transforming futures in
 /// Objective-C, only for consuming them
 @objc(SUFuture) @objcMembers public final class ObjcFuture: NSObject {
-    public typealias Handler = (ObjcResult) -> Void
-    public typealias Resolver = (@escaping Handler) -> Cancelable
+    public typealias Subscriber = (ObjcResult) -> Void
+    public typealias Worker = (@escaping Subscriber) -> Subscription
     
     private let future: Future<Any, NSError>
     
     internal init<T>(_ future: Future<T, NSError>) {
-        self.future = future.map { $0.map { $0 as Any} }
+        self.future = future.map { $0 as Any } 
     }
     
     @discardableResult
-    public func get(_ handler: @escaping Handler) -> Cancelable {
-        return future.get { handler(ObjcResult($0)) }
+    public func subscribe(_ subscriber: @escaping Subscriber) -> Subscription {
+        return future.subscribe { subscriber(ObjcResult($0)) }
     }
 }
 

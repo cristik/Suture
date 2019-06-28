@@ -7,10 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F2D5D8122C53F950028810A /* Future+Combine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2D5D8022C53F950028810A /* Future+Combine.swift */; };
+		0F2D5D8322C53FA00028810A /* Future+Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2D5D8222C53FA00028810A /* Future+Operators.swift */; };
 		0FAEBCC9214A1C9E0053DB61 /* Future+Subscribe-Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCC8214A1C9E0053DB61 /* Future+Subscribe-Tests.swift */; };
 		0FAEBCCB214A1CC00053DB61 /* Common.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCCA214A1CC00053DB61 /* Common.swift */; };
 		0FAEBCCD214A1D180053DB61 /* Future+Operators-Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCCC214A1D180053DB61 /* Future+Operators-Tests.swift */; };
-		0FAEBCCF214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FAEBCCE214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift */; };
 		0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */; };
 		0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */; };
 		0FCAF7F6212D335E007DF047 /* Cancelable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FCAF7F5212D335E007DF047 /* Cancelable.swift */; };
@@ -32,12 +33,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0F2D5D8022C53F950028810A /* Future+Combine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Combine.swift"; sourceTree = "<group>"; };
+		0F2D5D8222C53FA00028810A /* Future+Operators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Operators.swift"; sourceTree = "<group>"; };
 		0F4565C6214CCE540072D7E1 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		0F5477E6215952B5009E7656 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		0FAEBCC8214A1C9E0053DB61 /* Future+Subscribe-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Subscribe-Tests.swift"; sourceTree = "<group>"; };
 		0FAEBCCA214A1CC00053DB61 /* Common.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Common.swift; sourceTree = "<group>"; };
 		0FAEBCCC214A1D180053DB61 /* Future+Operators-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Future+Operators-Tests.swift"; sourceTree = "<group>"; };
-		0FAEBCCE214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cocoa+Suture-Tests.swift"; sourceTree = "<group>"; };
 		0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Cocoa+Suture.swift"; sourceTree = "<group>"; };
 		0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjcFuture.swift; sourceTree = "<group>"; };
 		0FCAF7F5212D335E007DF047 /* Cancelable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cancelable.swift; sourceTree = "<group>"; };
@@ -97,6 +99,8 @@
 				0FCAF7F5212D335E007DF047 /* Cancelable.swift */,
 				0FCAF7F7212D33B2007DF047 /* Dispatcher.swift */,
 				0FF6F744211CB78D007C8697 /* Future.swift */,
+				0F2D5D8222C53FA00028810A /* Future+Operators.swift */,
+				0F2D5D8022C53F950028810A /* Future+Combine.swift */,
 				0FCAF7F1212A83F9007DF047 /* Cocoa+Suture.swift */,
 				0FCAF7F3212D3297007DF047 /* ObjcFuture.swift */,
 				0FCAF7FB214236F4007DF047 /* Utils.swift */,
@@ -111,7 +115,6 @@
 				0FF6F74C211CB7AC007C8697 /* Future+Creation-Tests.swift */,
 				0FAEBCC8214A1C9E0053DB61 /* Future+Subscribe-Tests.swift */,
 				0FAEBCCC214A1D180053DB61 /* Future+Operators-Tests.swift */,
-				0FAEBCCE214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift */,
 				0FF6F74E211CB7AC007C8697 /* Info.plist */,
 			);
 			path = test;
@@ -220,10 +223,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FCAF7F4212D3297007DF047 /* ObjcFuture.swift in Sources */,
+				0F2D5D8122C53F950028810A /* Future+Combine.swift in Sources */,
 				0FCAF7F8212D33B2007DF047 /* Dispatcher.swift in Sources */,
 				0FCAF7FC214236F4007DF047 /* Utils.swift in Sources */,
 				0FF6F745211CB78D007C8697 /* Future.swift in Sources */,
 				0FCAF7F2212A83F9007DF047 /* Cocoa+Suture.swift in Sources */,
+				0F2D5D8322C53FA00028810A /* Future+Operators.swift in Sources */,
 				0FCAF7F6212D335E007DF047 /* Cancelable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -233,7 +238,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				0FAEBCCD214A1D180053DB61 /* Future+Operators-Tests.swift in Sources */,
-				0FAEBCCF214A6FBD0053DB61 /* Cocoa+Suture-Tests.swift in Sources */,
 				0FF6F74D211CB7AC007C8697 /* Future+Creation-Tests.swift in Sources */,
 				0FAEBCCB214A1CC00053DB61 /* Common.swift in Sources */,
 				0FAEBCC9214A1C9E0053DB61 /* Future+Subscribe-Tests.swift in Sources */,

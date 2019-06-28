@@ -31,20 +31,20 @@ final class FutureCreationTests: XCTestCase {
     func test_init_doesntStartWorkRightAway() {
         var executed = false
         _ = Future<Void, FutureTestsError> { _ in
-            executed = true; return Cancelable()
+            executed = true; return Subscription()
         }
         XCTAssertFalse(executed)
     }
     
     func test_value_reportsSuccess() {
         var result = Result<String, FutureTestsError>?.none
-        Future<String, FutureTestsError>.success("abc").get { result = $0 }
+        Future<String, FutureTestsError>.success("abc").subscribe { result = $0 }
         XCTAssertEqual(try? result?.get(), "abc")
     }
     
     func test_error_reportsError() {
         var result = Result<String, FutureTestsError>?.none
-        Future<String, FutureTestsError>.failure(.second).get { result = $0 }
+        Future<String, FutureTestsError>.failure(.second).subscribe { result = $0 }
         XCTAssertEqual(result, .failure(.second))
     }
 }
